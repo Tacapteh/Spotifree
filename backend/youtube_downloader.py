@@ -74,7 +74,7 @@ class YouTubeDownloader:
             # Configure yt-dlp options with better anti-detection
             ydl_opts = {
                 **self.common_opts,
-                'format': 'bestaudio[ext=m4a]/bestaudio[ext=mp3]/bestaudio',
+                'format': 'bestaudio[ext=m4a]/bestaudio[ext=mp3]/bestaudio/best[height<=480]',
                 'outtmpl': str(output_path),
                 'postprocessors': [{
                     'key': 'FFmpegExtractAudio',
@@ -92,10 +92,19 @@ class YouTubeDownloader:
                 'youtube_include_dash_manifest': False,
                 'extractor_retries': 3,
                 'fragment_retries': 3,
+                'skip_unavailable_fragments': True,
+                'keep_fragments': False,
+                'abort_on_unavailable_fragment': False,
                 'retry_sleep_functions': {
                     'http': lambda n: min(4 ** n, 30),
                     'fragment': lambda n: min(4 ** n, 30),
                     'extractor': lambda n: min(4 ** n, 30),
+                },
+                # Additional headers specific to YouTube
+                'http_headers': {
+                    **self.common_opts['http_headers'],
+                    'X-YouTube-Client-Name': '1',
+                    'X-YouTube-Client-Version': '2.20240101.00.00',
                 },
             }
             

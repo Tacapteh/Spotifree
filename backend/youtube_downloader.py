@@ -62,99 +62,120 @@ class YouTubeDownloader:
     
     def download_audio(self, url: str, format_type: str = 'mp3') -> Dict[str, Any]:
         """Download audio from YouTube URL"""
-        try:
-            # Generate unique filename
-            unique_id = str(uuid.uuid4())
-            output_filename = f"{unique_id}.%(ext)s"
-            output_path = self.download_dir / output_filename
-            
-            # Add random delay to avoid rate limiting
-            time.sleep(random.uniform(1, 3))
-            
-            # Configure yt-dlp options with better anti-detection
-            ydl_opts = {
-                **self.common_opts,
-                'format': 'bestaudio[ext=m4a]/bestaudio[ext=mp3]/bestaudio/best[height<=480]',
-                'outtmpl': str(output_path),
-                'postprocessors': [{
-                    'key': 'FFmpegExtractAudio',
-                    'preferredcodec': format_type,
-                    'preferredquality': '192',
-                }],
-                # Additional options to avoid 403 errors
-                'geo_bypass': True,
-                'geo_bypass_country': 'US',
-                'age_limit': None,
-                'ignoreerrors': False,
-                'no_check_certificate': True,
-                'prefer_insecure': False,
-                # YouTube specific options
-                'youtube_include_dash_manifest': False,
-                'extractor_retries': 3,
-                'fragment_retries': 3,
-                'skip_unavailable_fragments': True,
-                'keep_fragments': False,
-                'abort_on_unavailable_fragment': False,
-                'retry_sleep_functions': {
-                    'http': lambda n: min(4 ** n, 30),
-                    'fragment': lambda n: min(4 ** n, 30),
-                    'extractor': lambda n: min(4 ** n, 30),
-                },
-                # Additional headers specific to YouTube
-                'http_headers': {
-                    **self.common_opts['http_headers'],
-                    'X-YouTube-Client-Name': '1',
-                    'X-YouTube-Client-Version': '2.20240101.00.00',
-                },
-            }
-            
-            with yt_dlp.YoutubeDL(ydl_opts) as ydl:
-                # Get info first
-                info = ydl.extract_info(url, download=False)
+        max_attempts = 2
+        
+        for attempt in range(max_attempts):
+            try:
+                # Generate unique filename
+                unique_id = str(uuid.uuid4())
+                output_filename = f"{unique_id}.%(ext)s"
+                output_path = self.download_dir / output_filename
                 
-                # Download the audio with retry logic
-                max_retries = 3
-                for attempt in range(max_retries):
-                    try:
-                        ydl.download([url])
-                        break
-                    except Exception as e:
-                        if attempt == max_retries - 1:
-                            raise e
-                        logger.warning(f"Download attempt {attempt + 1} failed, retrying: {e}")
-                        time.sleep(random.uniform(2, 5))
+                # Add random delay to avoid rate limiting
+                time.sleep(random.uniform(1, 3))
                 
-                # Find the actual downloaded file
-                downloaded_file = self.download_dir / f"{unique_id}.{format_type}"
-                
-                if downloaded_file.exists():
-                    return {
-                        'success': True,
-                        'file_path': str(downloaded_file),
-                        'filename': f"{info.get('title', 'Unknown')}.{format_type}",
-                        'title': info.get('title', 'Unknown Title'),
-                        'artist': info.get('uploader', 'Unknown Artist'),
-                        'duration': info.get('duration', 0),
-                        'file_size': downloaded_file.stat().st_size,
-                        'unique_id': unique_id
-                    }
+                # Try different approaches based on attempt
+                if attempt == 0:
+                    # First attempt: Standard approach
+                    format_selector = 'bestaudio[ext=m4a]/bestaudio[ext=mp3]/bestaudio/best[height<=480]'
                 else:
-                    raise Exception("Downloaded file not found")
+                    # Second attempt: More conservative approach
+                    format_selector = 'worst[ext=mp4]/worst'
+                
+                # Configure yt-dlp options with better anti-detection
+                ydl_opts = {
+                    **self.common_opts,
+                    'format': format_selector,
+                    'outtmpl': str(output_path),
+                    'postprocessors': [{
+                        'key': 'FFmpegExtractAudio',
+                        'preferredcodec': format_type,
+                        'preferredquality': '128' if attempt > 0 else '192',
+                    }],
+                    # Additional options to avoid 403 errors
+                    'geo_bypass': True,
+                    'geo_bypass_country': 'US',
+                    'age_limit': None,
+                    'ignoreerrors': False,
+                    'no_check_certificate': True,
+                    'prefer_insecure': False,
+                    # YouTube specific options
+                    'youtube_include_dash_manifest': False,
+                    'extractor_retries': 2,
+                    'fragment_retries': 2,
+                    'skip_unavailable_fragments': True,
+                    'keep_fragments': False,
+                    'abort_on_unavailable_fragment': False,
+                    'retry_sleep_functions': {
+                        'http': lambda n: min(2 ** n, 10),
+                        'fragment': lambda n: min(2 ** n, 10),
+                        'extractor': lambda n: min(2 ** n, 10),
+                    },
+                    # Additional headers specific to YouTube
+                    'http_headers': {
+                        **self.common_opts['http_headers'],
+                        'X-YouTube-Client-Name': '1',
+                        'X-YouTube-Client-Version': '2.20240101.00.00',
+                    },
+                }
+                
+                with yt_dlp.YoutubeDL(ydl_opts) as ydl:
+                    # Get info first
+                    info = ydl.extract_info(url, download=False)
                     
-        except Exception as e:
-            logger.error(f"Error downloading audio: {e}")
-            # More specific error messages
-            error_msg = str(e)
-            if "403" in error_msg or "Forbidden" in error_msg:
-                raise Exception("YouTube has blocked this request. Try again later or use a different video.")
-            elif "404" in error_msg or "not available" in error_msg:
-                raise Exception("This video is not available or has been removed.")
-            elif "private" in error_msg.lower():
-                raise Exception("This video is private and cannot be downloaded.")
-            elif "age" in error_msg.lower():
-                raise Exception("This video has age restrictions and cannot be downloaded.")
-            else:
-                raise Exception(f"Download failed: {error_msg}")
+                    # Check if video is available
+                    if info.get('availability') not in [None, 'public']:
+                        raise Exception(f"Video is not publicly available: {info.get('availability', 'unknown')}")
+                    
+                    # Download the audio
+                    ydl.download([url])
+                    
+                    # Find the actual downloaded file
+                    downloaded_file = self.download_dir / f"{unique_id}.{format_type}"
+                    
+                    if downloaded_file.exists():
+                        return {
+                            'success': True,
+                            'file_path': str(downloaded_file),
+                            'filename': f"{info.get('title', 'Unknown')}.{format_type}",
+                            'title': info.get('title', 'Unknown Title'),
+                            'artist': info.get('uploader', 'Unknown Artist'),
+                            'duration': info.get('duration', 0),
+                            'file_size': downloaded_file.stat().st_size,
+                            'unique_id': unique_id
+                        }
+                    else:
+                        if attempt < max_attempts - 1:
+                            logger.warning(f"Downloaded file not found on attempt {attempt + 1}, retrying...")
+                            continue
+                        else:
+                            raise Exception("Downloaded file not found after all attempts")
+                        
+            except Exception as e:
+                logger.error(f"Download attempt {attempt + 1} failed: {e}")
+                
+                if attempt < max_attempts - 1:
+                    # Wait before retrying
+                    time.sleep(random.uniform(3, 7))
+                    continue
+                else:
+                    # Final attempt failed, raise with better error message
+                    error_msg = str(e)
+                    if "403" in error_msg or "Forbidden" in error_msg:
+                        raise Exception("YouTube a temporairement bloqué cette requête. Cette vidéo pourrait avoir des restrictions géographiques ou être protégée. Essayez une autre vidéo ou réessayez plus tard.")
+                    elif "404" in error_msg or "not available" in error_msg:
+                        raise Exception("Cette vidéo n'est pas disponible ou a été supprimée.")
+                    elif "private" in error_msg.lower():
+                        raise Exception("Cette vidéo est privée et ne peut pas être téléchargée.")
+                    elif "age" in error_msg.lower() or "restricted" in error_msg.lower():
+                        raise Exception("Cette vidéo a des restrictions d'âge et ne peut pas être téléchargée.")
+                    elif "copyright" in error_msg.lower():
+                        raise Exception("Cette vidéo est protégée par des droits d'auteur et ne peut pas être téléchargée.")
+                    else:
+                        raise Exception(f"Échec du téléchargement après {max_attempts} tentatives: {error_msg}")
+        
+        # This should not be reached, but just in case
+        raise Exception("Échec du téléchargement après toutes les tentatives")
     
     def cleanup_file(self, file_path: str) -> bool:
         """Remove downloaded file"""

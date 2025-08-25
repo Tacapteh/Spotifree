@@ -49,6 +49,8 @@ const YouTubeDownloader = () => {
     }
 
     setIsLoading(true);
+    setVideoInfo(null); // Reset previous info
+    
     try {
       const response = await axios.post(`${BACKEND_URL}/api/youtube/info`, { url });
       if (response.data.success) {
@@ -59,9 +61,22 @@ const YouTubeDownloader = () => {
         });
       }
     } catch (error) {
+      console.error('YouTube info error:', error);
+      let errorMessage = "Impossible de récupérer les informations de la vidéo";
+      
+      if (error.response?.data?.detail) {
+        errorMessage = error.response.data.detail;
+      } else if (error.response?.status === 403) {
+        errorMessage = "Accès interdit par YouTube. Essayez une autre vidéo.";
+      } else if (error.response?.status === 404) {
+        errorMessage = "Vidéo non trouvée ou supprimée.";
+      } else if (error.code === 'NETWORK_ERROR') {
+        errorMessage = "Erreur de connexion. Vérifiez votre internet.";
+      }
+      
       toast({
         title: "Erreur",
-        description: error.response?.data?.detail || "Impossible de récupérer les informations de la vidéo",
+        description: errorMessage,
         variant: "destructive"
       });
       setVideoInfo(null);

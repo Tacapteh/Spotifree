@@ -1,72 +1,182 @@
-import React, { useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import "./App.css";
 import { BrowserRouter } from "react-router-dom";
 import { Toaster } from "./components/ui/toaster";
 import { useLibraryStore } from "./stores/library";
-import LocalImport from "./components/LocalImport";
-import HomeArtists from "./components/HomeArtists";
-import Player from "./components/Player";
+import { useHistoryStore } from "./stores/history";
 import { usePlayerStore } from "./stores/player";
 
+// Components
+import Navigation from "./components/Navigation";
+import LocalImport from "./components/LocalImport";
+import HomeArtists from "./components/HomeArtists";
+import Search from "./components/Search";
+import Playlists from "./components/Playlists";
+import History from "./components/History";
+import YouTubeDownloader from "./components/YouTubeDownloader";
+import Player from "./components/Player";
+
 function App() {
-  const { load, loaded } = useLibraryStore();
-  const playQueue = usePlayerStore(state => state.playQueue);
-  const getPlaylistTracks = useLibraryStore(state => state.getPlaylistTracks);
+  const [currentView, setCurrentView] = useState('home');
+  const [currentPlaylistId, setCurrentPlaylistId] = useState(null);
   
-  // Load library on app start
+  // Store hooks
+  const { load: loadLibrary, loaded: libraryLoaded, tracks } = useLibraryStore();
+  const { load: loadHistory, loaded: historyLoaded, addEntry } = useHistoryStore();
+  const { playQueue, currentTrack } = usePlayerStore();
+
+  // Load data on app start
   useEffect(() => {
-    if (!loaded) {
-      load();
+    if (!libraryLoaded) {
+      loadLibrary();
     }
-  }, [load, loaded]);
+    if (!historyLoaded) {
+      loadHistory();
+    }
+  }, [loadLibrary, libraryLoaded, loadHistory, historyLoaded]);
+
+  // Track history when songs are played
+  useEffect(() => {
+    if (currentTrack) {
+      // Add to history when a track starts playing
+      addEntry(currentTrack.id, 0);
+    }
+  }, [currentTrack, addEntry]);
 
   // Handle artist selection
   const handleOpenArtist = (artistId, artistName) => {
     console.log(`Opening artist: ${artistName} (${artistId})`);
     
     // Get all tracks by this artist and play them
-    const tracks = useLibraryStore.getState().tracks.filter(
-      track => track.artistId === artistId
-    );
+    const artistTracks = tracks.filter(track => track.artistId === artistId);
     
-    if (tracks.length > 0) {
-      playQueue(tracks);
+    if (artistTracks.length > 0) {
+      playQueue(artistTracks);
+    }
+  };
+
+  // Handle view changes
+  const handleViewChange = (view, data) => {
+    setCurrentView(view);
+    if (view === 'playlist') {
+      setCurrentPlaylistId(data);
+    } else {
+      setCurrentPlaylistId(null);
+    }
+  };
+
+  // Render current view
+  const renderCurrentView = () => {
+    switch (currentView) {
+      case 'home':
+        return (
+          <div className="p-8 space-y-8">
+            {/* Welcome Section */}
+            <div className="mb-8">
+              <h1 className="text-4xl font-bold text-white mb-2">
+                Bon{new Date().getHours() < 18 ? (new Date().getHours() < 12 ? 'jour' : ' après-midi') : 'soir'}
+              </h1>
+              <p className="text-gray-400 text-lg">
+                Que souhaitez-vous écouter aujourd'hui ?
+              </p>
+            </div>
+
+            {/* Quick Access Grid */}
+            <div className="grid grid-cols-2 md:grid-cols-3 gap-4 mb-8">
+              {[
+                { name: 'Titres likés', color: 'from-purple-500 to-pink-500', count: tracks.length },
+                { name: 'Mix du jour', color: 'from-orange-500 to-red-500', count: Math.min(tracks.length, 50) },
+                { name: 'Découverte', color: 'from-green-500 to-teal-500', count: tracks.length },
+                { name: 'Récents', color: 'from-blue-500 to-cyan-500', count: Math.min(tracks.length, 20) },
+                { name: 'Rock', color: 'from-red-500 to-pink-500', count: Math.floor(tracks.length * 0.3) },
+                { name: 'Pop', color: 'from-pink-500 to-purple-500', count: Math.floor(tracks.length * 0.4) }
+              ].map((item, index) => (
+                <div
+                  key={index}
+                  className={`bg-gradient-to-br ${item.color} rounded-lg p-4 cursor-pointer hover:scale-105 transition-transform`}
+                >
+                  <h3 className="text-white font-semibold text-lg">{item.name}</h3>
+                  <p className="text-white/80 text-sm">{item.count} pistes</p>
+                </div>
+              ))}
+            </div>
+
+            {/* Import Section */}
+            <LocalImport />
+            
+            {/* Artists Section */}
+            <HomeArtists onOpenArtist={handleOpenArtist} />
+          </div>
+        );
+      
+      case 'search':
+        return <Search />;
+      
+      case 'library':
+        return (
+          <div className="p-8 space-y-8">
+            <LocalImport />
+            <HomeArtists onOpenArtist={handleOpenArtist} />
+          </div>
+        );
+      
+      case 'playlists':
+        return <Playlists />;
+      
+      case 'history':
+        return <History />;
+      
+      case 'youtube':
+        return <YouTubeDownloader />;
+      
+      default:
+        return (
+          <div className="p-8 text-center text-gray-400">
+            <h2 className="text-2xl font-bold mb-4">Vue non trouvée</h2>
+            <p>Cette section est en cours de développement.</p>
+          </div>
+        );
     }
   };
 
   return (
     <div className="App min-h-screen bg-black text-white">
       <BrowserRouter>
-        <div className="container mx-auto px-6 py-8">
-          {/* Header */}
-          <header className="mb-12">
-            <div className="flex items-center gap-3 mb-4">
-              <div className="w-10 h-10 bg-white rounded-full flex items-center justify-center">
-                <div className="text-black font-bold text-lg">♪</div>
-              </div>
-              <h1 className="text-4xl font-bold">Spotifree</h1>
-            </div>
-            <p className="text-gray-400 text-lg">
-              Votre bibliothèque musicale personnelle, libre et sans limites
-            </p>
-          </header>
-
+        <div className="flex h-screen">
+          {/* Sidebar Navigation */}
+          <Navigation currentView={currentView} onViewChange={handleViewChange} />
+          
           {/* Main Content */}
-          <main className="space-y-8">
-            {/* Import Section */}
-            <LocalImport />
-            
-            {/* Artists Section */}
-            <HomeArtists onOpenArtist={handleOpenArtist} />
-            
-            {/* Future sections can be added here */}
-            <div className="text-center py-16 text-gray-500">
-              <p>Plus de fonctionnalités à venir...</p>
-              <p className="text-sm mt-2">
-                Playlists, recherche, historique, et bien plus encore
-              </p>
+          <div className="flex-1 flex flex-col overflow-hidden">
+            {/* Top Bar */}
+            <div className="h-16 bg-gray-900/50 backdrop-blur-sm border-b border-gray-800 flex items-center justify-between px-8">
+              <div className="flex items-center gap-4">
+                <button className="w-8 h-8 rounded-full bg-black/50 flex items-center justify-center text-gray-400 hover:text-white transition-colors">
+                  ←
+                </button>
+                <button className="w-8 h-8 rounded-full bg-black/50 flex items-center justify-center text-gray-400 hover:text-white transition-colors">
+                  →
+                </button>
+              </div>
+              
+              <div className="flex items-center gap-4">
+                <button className="text-gray-400 hover:text-white text-sm font-medium transition-colors">
+                  Premium
+                </button>
+                <button className="text-gray-400 hover:text-white text-sm font-medium transition-colors">
+                  Support
+                </button>
+                <div className="w-8 h-8 rounded-full bg-gray-700 flex items-center justify-center text-white text-sm font-medium">
+                  U
+                </div>
+              </div>
             </div>
-          </main>
+            
+            {/* Content Area */}
+            <div className="flex-1 overflow-y-auto">
+              {renderCurrentView()}
+            </div>
+          </div>
         </div>
         
         {/* Global Player */}

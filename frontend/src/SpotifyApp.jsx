@@ -5,6 +5,7 @@ import MainContent from './components/MainContent';
 import MusicPlayer from './components/MusicPlayer';
 import LocalPlayer from './components/LocalPlayer';
 import { Button } from './components/ui/button';
+import { Home, Music } from 'lucide-react';
 import { mockTrendingSongs } from './data/mockData';
 
 const SpotifyApp = () => {
@@ -16,7 +17,30 @@ const SpotifyApp = () => {
   };
 
   if (currentView === 'local') {
-    return <LocalPlayer />;
+    return (
+      <div className="h-screen bg-black flex flex-col">
+        {/* Header Navigation */}
+        <div className="h-16 bg-gray-900 border-b border-gray-800 flex items-center justify-between px-6">
+          <div className="flex items-center gap-4">
+            <Button
+              onClick={() => setCurrentView('discover')}
+              variant="ghost" 
+              className="text-gray-400 hover:text-white flex items-center gap-2"
+            >
+              <Home size={20} />
+              Back to Discover
+            </Button>
+          </div>
+          <div className="flex items-center gap-2">
+            <Music className="text-green-500 w-6 h-6" />
+            <span className="text-white font-semibold">Local Player Mode</span>
+          </div>
+        </div>
+        <div className="flex-1">
+          <LocalPlayer />
+        </div>
+      </div>
+    );
   }
 
   return (
@@ -28,9 +52,10 @@ const SpotifyApp = () => {
             <Button
               onClick={() => setCurrentView('local')}
               variant="outline"
-              className="w-full text-sm bg-gray-900 border-gray-700 text-white hover:bg-gray-800"
+              className="w-full text-sm bg-gray-900 border-gray-700 text-white hover:bg-gray-800 hover:border-green-500 transition-colors flex items-center gap-2"
             >
-              🎵 Local Player
+              <Music size={16} />
+              Local Player
             </Button>
           </div>
         </div>

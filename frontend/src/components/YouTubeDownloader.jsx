@@ -121,9 +121,24 @@ const YouTubeDownloader = () => {
         setVideoInfo(null);
       }
     } catch (error) {
+      console.error('YouTube download error:', error);
+      let errorMessage = "Échec du téléchargement";
+      
+      if (error.response?.data?.detail) {
+        errorMessage = error.response.data.detail;
+      } else if (error.response?.status === 403) {
+        errorMessage = "YouTube a bloqué cette requête. Essayez plus tard ou une autre vidéo.";
+      } else if (error.response?.status === 404) {
+        errorMessage = "Vidéo non disponible pour le téléchargement.";
+      } else if (error.code === 'NETWORK_ERROR') {
+        errorMessage = "Erreur de connexion. Vérifiez votre internet.";
+      } else if (error.response?.status === 429) {
+        errorMessage = "Trop de requêtes. Attendez quelques minutes avant de réessayer.";
+      }
+      
       toast({
         title: "Erreur de téléchargement",
-        description: error.response?.data?.detail || "Échec du téléchargement",
+        description: errorMessage,
         variant: "destructive"
       });
     } finally {

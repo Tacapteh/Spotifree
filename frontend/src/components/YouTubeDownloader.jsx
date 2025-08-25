@@ -223,16 +223,30 @@ const YouTubeDownloader = () => {
           YouTube Downloader
         </h1>
         
-        {/* Disclaimer */}
-        <div className="mb-6 p-4 bg-yellow-900/20 border border-yellow-500/20 rounded-lg">
-          <div className="flex items-start gap-2">
-            <AlertTriangle className="text-yellow-500 mt-0.5 flex-shrink-0" size={16} />
+        {/* Disclaimer & Tips */}
+        <div className="mb-6 space-y-4">
+          <div className="p-4 bg-yellow-900/20 border border-yellow-500/20 rounded-lg">
+            <div className="flex items-start gap-2">
+              <AlertTriangle className="text-yellow-500 mt-0.5 flex-shrink-0" size={16} />
+              <div className="text-sm">
+                <p className="font-medium text-yellow-500 mb-1">⚠️ Avertissement Important</p>
+                <p className="text-yellow-200">
+                  Respectez les droits d'auteur et les conditions d'utilisation de YouTube. 
+                  Utilisez uniquement pour du contenu libre de droits ou vos propres créations.
+                </p>
+              </div>
+            </div>
+          </div>
+          
+          <div className="p-4 bg-blue-900/20 border border-blue-500/20 rounded-lg">
             <div className="text-sm">
-              <p className="font-medium text-yellow-500 mb-1">⚠️ Avertissement Important</p>
-              <p className="text-yellow-200">
-                Respectez les droits d'auteur et les conditions d'utilisation de YouTube. 
-                Utilisez uniquement pour du contenu libre de droits ou vos propres créations.
-              </p>
+              <p className="font-medium text-blue-400 mb-2">💡 Conseils pour un téléchargement réussi :</p>
+              <ul className="text-blue-200 space-y-1 text-xs">
+                <li>• Utilisez des vidéos courtes (moins de 10 minutes) pour de meilleurs résultats</li>
+                <li>• Évitez les vidéos avec restrictions géographiques ou d'âge</li>
+                <li>• Les vidéos musicales populaires peuvent être bloquées par YouTube</li>
+                <li>• Essayez des vidéos éducatives, podcasts, ou contenu Creative Commons</li>
+              </ul>
             </div>
           </div>
         </div>

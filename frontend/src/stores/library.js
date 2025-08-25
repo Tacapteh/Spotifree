@@ -61,6 +61,41 @@ export const useLibraryStore = create((set, get) => ({
     await get().save();
   },
 
+  // Remove tracks from library
+  removeTracks: async (trackIds) => {
+    const state = get();
+    const removeIds = new Set(trackIds);
+    
+    // Remove tracks from main library
+    const updatedTracks = state.tracks.filter(track => !removeIds.has(track.id));
+    
+    // Remove tracks from all playlists
+    const updatedPlaylists = state.playlists.map(playlist => ({
+      ...playlist,
+      trackIds: playlist.trackIds.filter(id => !removeIds.has(id))
+    }));
+    
+    // Clean up object URLs for removed tracks
+    state.tracks
+      .filter(track => removeIds.has(track.id) && track.objectUrl)
+      .forEach(track => {
+        URL.revokeObjectURL(track.objectUrl);
+      });
+    
+    set({ 
+      tracks: updatedTracks,
+      playlists: updatedPlaylists
+    });
+    
+    // Auto-save
+    await get().save();
+  },
+
+  // Remove single track
+  removeTrack: async (trackId) => {
+    await get().removeTracks([trackId]);
+  },
+
   // Create new playlist
   createPlaylist: async (name, trackIds = []) => {
     const playlist = {
@@ -101,6 +136,34 @@ export const useLibraryStore = create((set, get) => ({
         : p
     );
 
+    set({ playlists: updatedPlaylists });
+    
+    // Auto-save
+    await get().save();
+  },
+
+  // Remove tracks from playlist
+  removeFromPlaylist: async (playlistId, trackIds) => {
+    const state = get();
+    const removeIds = new Set(trackIds);
+    
+    const updatedPlaylists = state.playlists.map(p => 
+      p.id === playlistId 
+        ? { ...p, trackIds: p.trackIds.filter(id => !removeIds.has(id)) }
+        : p
+    );
+
+    set({ playlists: updatedPlaylists });
+    
+    // Auto-save
+    await get().save();
+  },
+
+  // Delete playlist
+  deletePlaylist: async (playlistId) => {
+    const state = get();
+    const updatedPlaylists = state.playlists.filter(p => p.id !== playlistId);
+    
     set({ playlists: updatedPlaylists });
     
     // Auto-save

@@ -89,30 +89,25 @@ export default function LocalPlayer() {
   };
 
   return (
-    <div className="h-screen bg-black flex flex-col text-white">
+    <div className="h-full bg-black flex flex-col text-white">
       {/* Main Content */}
       <div className="flex-1 overflow-hidden flex">
         {/* Sidebar */}
-        <div className="w-64 bg-black border-r border-gray-800 flex flex-col">
-          <div className="p-6">
-            <div className="flex items-center gap-2 mb-8">
-              <div className="w-8 h-8 bg-white rounded-full flex items-center justify-center">
-                <Music className="text-black w-5 h-5" />
-              </div>
-              <span className="font-bold text-xl">Local Player</span>
-            </div>
-            
-            <label className="flex items-center gap-3 p-3 rounded-lg border border-gray-700 hover:border-gray-600 cursor-pointer transition-colors">
-              <Upload size={20} />
-              <span>Import MP3 Files</span>
-              <input 
-                type="file" 
-                accept=".mp3,audio/mpeg" 
-                multiple 
-                className="hidden" 
-                onChange={onPick}
-              />
-            </label>
+        <div className="w-64 bg-black border-r border-gray-800 flex flex-col p-6">
+          <label className="flex items-center gap-3 p-4 rounded-lg border border-gray-700 hover:border-green-500 cursor-pointer transition-colors mb-6">
+            <Upload size={20} />
+            <span className="font-medium">Import MP3 Files</span>
+            <input 
+              type="file" 
+              accept=".mp3,audio/mpeg" 
+              multiple 
+              className="hidden" 
+              onChange={onPick}
+            />
+          </label>
+          
+          <div className="text-center text-gray-400 text-sm">
+            {tracks.length > 0 ? `${tracks.length} files imported` : 'No files imported yet'}
           </div>
         </div>
 
@@ -120,13 +115,23 @@ export default function LocalPlayer() {
         <div className="flex-1 bg-gradient-to-b from-gray-800 to-black overflow-y-auto">
           <div className="p-8">
             <h1 className="text-3xl font-bold mb-6">Local Playlist</h1>
-            <p className="text-gray-400 mb-6">{tracks.length} tracks imported</p>
             
             {tracks.length === 0 ? (
               <div className="text-center py-16">
                 <Music size={64} className="text-gray-600 mx-auto mb-4" />
                 <h2 className="text-xl font-semibold mb-2">No music files loaded</h2>
-                <p className="text-gray-400">Import some MP3 files to get started</p>
+                <p className="text-gray-400 mb-6">Import some MP3 files to get started</p>
+                <label className="inline-flex items-center gap-3 px-6 py-3 bg-green-500 hover:bg-green-400 text-black font-medium rounded-full cursor-pointer transition-colors">
+                  <Upload size={20} />
+                  Choose MP3 Files
+                  <input 
+                    type="file" 
+                    accept=".mp3,audio/mpeg" 
+                    multiple 
+                    className="hidden" 
+                    onChange={onPick}
+                  />
+                </label>
               </div>
             ) : (
               <div className="space-y-2">
@@ -134,12 +139,14 @@ export default function LocalPlayer() {
                   <div
                     key={track.url}
                     onClick={() => loadAt(idx, true)}
-                    className={`group flex items-center justify-between p-3 rounded-lg cursor-pointer transition-colors ${
-                      idx === i ? 'bg-gray-800' : 'hover:bg-gray-900'
+                    className={`group flex items-center justify-between p-4 rounded-lg cursor-pointer transition-all hover:bg-gray-800 ${
+                      idx === i ? 'bg-gray-800 border-l-4 border-green-500' : ''
                     }`}
                   >
                     <div className="flex items-center gap-4 flex-1 min-w-0">
-                      <div className="w-10 h-10 bg-gray-700 rounded flex items-center justify-center">
+                      <div className={`w-10 h-10 rounded flex items-center justify-center ${
+                        idx === i ? 'bg-green-500 text-black' : 'bg-gray-700 text-white'
+                      }`}>
                         {idx === i && playing ? (
                           <Pause size={16} />
                         ) : (
@@ -147,16 +154,20 @@ export default function LocalPlayer() {
                         )}
                       </div>
                       <div className="flex-1 min-w-0">
-                        <div className="text-white font-medium truncate">
+                        <div className="text-white font-medium truncate text-base">
                           {track.name}
                         </div>
                         <div className="text-gray-400 text-sm">
-                          Local File
+                          Local MP3 File
                         </div>
                       </div>
                     </div>
                     <div className="text-gray-400 text-sm">
-                      {idx === i && playing ? 'Playing' : 'Ready'}
+                      {idx === i && playing ? (
+                        <span className="text-green-500 font-medium">Playing</span>
+                      ) : (
+                        <span>Ready</span>
+                      )}
                     </div>
                   </div>
                 ))}
@@ -179,7 +190,7 @@ export default function LocalPlayer() {
       <div className="h-24 bg-gray-900 border-t border-gray-800 flex items-center justify-between px-4">
         {/* Current Track Info */}
         <div className="flex items-center gap-4 w-80">
-          {tracks[i] && (
+          {tracks[i] ? (
             <>
               <div className="w-14 h-14 bg-gray-700 rounded-md flex items-center justify-center">
                 <Music className="text-gray-400 w-6 h-6" />
@@ -189,10 +200,12 @@ export default function LocalPlayer() {
                   {tracks[i]?.name || "No track"}
                 </div>
                 <div className="text-gray-400 text-xs truncate">
-                  Local File
+                  Local MP3 File
                 </div>
               </div>
             </>
+          ) : (
+            <div className="text-gray-400 text-sm">No track selected</div>
           )}
         </div>
 

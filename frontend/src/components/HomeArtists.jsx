@@ -1,11 +1,41 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { User, Play } from 'lucide-react';
 import { Button } from './ui/button';
 import { Card } from './ui/card';
 import { useAllArtists } from '../lib/selectors';
+import { getArtistImage } from '../services/musicBrainz';
 
 const HomeArtists = ({ onOpenArtist }) => {
   const artists = useAllArtists();
+  const [artistImages, setArtistImages] = useState({});
+
+  // Load artist images
+  useEffect(() => {
+    const loadArtistImages = async () => {
+      const imagePromises = artists.slice(0, 12).map(async (artist) => {
+        if (artist.name && artist.name !== 'Unknown Artist') {
+          try {
+            const image = await getArtistImage(artist.name);
+            return { artistId: artist.id, image };
+          } catch (error) {
+            console.warn(`Failed to load image for ${artist.name}:`, error);
+          }
+        }
+        return { artistId: artist.id, image: null };
+      });
+
+      const images = await Promise.all(imagePromises);
+      const imageMap = {};
+      images.forEach(({ artistId, image }) => {
+        imageMap[artistId] = image;
+      });
+      setArtistImages(imageMap);
+    };
+
+    if (artists.length > 0) {
+      loadArtistImages();
+    }
+  }, [artists]);
 
   if (artists.length === 0) {
     return (
@@ -44,6 +74,7 @@ const HomeArtists = ({ onOpenArtist }) => {
           <ArtistCard
             key={artist.id}
             artist={artist}
+            artistImage={artistImages[artist.id]}
             onOpenArtist={onOpenArtist}
           />
         ))}
@@ -52,7 +83,7 @@ const HomeArtists = ({ onOpenArtist }) => {
   );
 };
 
-const ArtistCard = ({ artist, onOpenArtist }) => {
+const ArtistCard = ({ artist, artistImage, onOpenArtist }) => {
   const handleClick = () => {
     onOpenArtist(artist.id, artist.name);
   };
@@ -64,10 +95,25 @@ const ArtistCard = ({ artist, onOpenArtist }) => {
         className="w-full p-4 text-left focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 focus:ring-offset-gray-900 rounded-lg"
         aria-label={`Ouvrir l'artiste ${artist.name} - ${artist.trackCount} piste(s)`}
       >
-        {/* Artist Avatar/Icon */}
+        {/* Artist Avatar/Image */}
         <div className="relative mb-4">
-          <div className="w-full aspect-square bg-gradient-to-br from-gray-700 to-gray-800 rounded-full flex items-center justify-center">
-            <User size={32} className="text-gray-400" />
+          <div className="w-full aspect-square rounded-full overflow-hidden flex items-center justify-center bg-gradient-to-br from-gray-700 to-gray-800">
+            {artistImage ? (
+              <img
+                src={artistImage}
+                alt={artist.name}
+                className="w-full h-full object-cover"
+                onError={(e) => {
+                  e.target.style.display = 'none';
+                  e.target.nextSibling.style.display = 'flex';
+                }}
+              />
+            ) : null}
+            <User 
+              size={32} 
+              className="text-gray-400" 
+              style={{ display: artistImage ? 'none' : 'flex' }} 
+            />
           </div>
           
           {/* Play button overlay */}

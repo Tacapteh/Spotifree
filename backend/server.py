@@ -25,6 +25,22 @@ db = client[os.environ['DB_NAME']]
 # Create the main app without a prefix
 app = FastAPI()
 
+# --- Health checks (sans et avec /api) ---
+@app.get("/health")
+def health_root():
+    return {"ok": True}
+
+@app.get("/api/health")
+def health_api():
+    return {"ok": True}
+
+# (facultatif) route racine utile si Render check / :
+@app.get("/")
+def root():
+    return {"ok": True, "at": "/"}
+
+
+
 # Create a router with the /api prefix
 api_router = APIRouter(prefix="/api")
 

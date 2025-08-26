@@ -3,13 +3,20 @@ import { Play, Pause, SkipBack, SkipForward, Shuffle, Repeat, Volume2, Heart } f
 import { Button } from './ui/button';
 import { Slider } from './ui/slider';
 import { usePlayerStore } from '../stores/player';
+import { useToast } from '../hooks/use-toast';
+
+const isHlsUrl = (url) => /.m3u8($|\?)/i.test(url);
+const getYoutubeEmbedUrl = (url) => {
+  const match = url?.match(/[?&]v=([^&]+)/) || url?.match(/youtu\.be\/([^?]+)/);
+  return match ? `https://www.youtube.com/embed/${match[1]}?autoplay=1&rel=0` : '';
+};
 
 const Player = () => {
   const audioRef = useRef(null);
-  
+  const { toast } = useToast();
+
   // Player state
   const {
-    currentSrc,
     currentTrack,
     playing,
     progress,
@@ -20,7 +27,7 @@ const Player = () => {
     queue,
     currentIndex
   } = usePlayerStore();
-  
+
   // Player actions
   const {
     setPlaying,
@@ -35,23 +42,72 @@ const Player = () => {
     onLoadedMetadata
   } = usePlayerStore();
 
-  // Handle audio element changes
+  // Load track when it changes
   useEffect(() => {
-    const audio = audioRef.current;
-    if (!audio) return;
+    const audioEl = audioRef.current;
+    if (!audioEl || !currentTrack) return;
 
-    if (currentSrc) {
-      audio.src = currentSrc;
-      audio.load();
-      
-      if (playing) {
-        audio.play().catch(error => {
-          console.error('Failed to play audio:', error);
-          setPlaying(false);
+    let hls;
+    const load = async () => {
+      try {
+        audioEl.crossOrigin = 'anonymous';
+
+        if (currentTrack.playback?.kind === 'youtube-embed') {
+          return;
+        }
+
+        if (currentTrack.playback?.kind === 'hls') {
+          if (audioEl.canPlayType('application/vnd.apple.mpegurl')) {
+            audioEl.src = currentTrack.playback.url;
+          } else {
+            console.warn('HLS fallback to hls.js');
+            const Hls = (await import('hls.js')).default;
+            hls = new Hls();
+            hls.loadSource(currentTrack.playback.url);
+            hls.attachMedia(audioEl);
+          }
+        } else if (currentTrack.playback?.kind === 'direct') {
+          audioEl.src = currentTrack.playback.url;
+        } else {
+          audioEl.removeAttribute('src');
+        }
+
+        await new Promise((resolve, reject) => {
+          const onLoaded = () => { cleanup(); resolve(); };
+          const onError = (e) => { cleanup(); reject(e); };
+          const timeoutId = setTimeout(() => {
+            console.warn('track load timeout');
+            cleanup();
+            reject(new Error('timeout'));
+          }, 5000);
+          const cleanup = () => {
+            audioEl.removeEventListener('loadedmetadata', onLoaded);
+            audioEl.removeEventListener('error', onError);
+            clearTimeout(timeoutId);
+          };
+          audioEl.addEventListener('loadedmetadata', onLoaded);
+          audioEl.addEventListener('error', onError);
         });
+
+        if (playing) {
+          try {
+            await audioEl.play();
+          } catch (e) {
+            console.warn('audio.play() failed', e?.name, e?.message);
+          }
+        }
+      } catch (err) {
+        console.warn('track load failed', err);
+        toast({ title: 'Lecture impossible (format ou CORS)' });
       }
-    }
-  }, [currentSrc, playing, setPlaying]);
+    };
+
+    load();
+
+    return () => {
+      if (hls) hls.destroy();
+    };
+  }, [currentTrack, playing, toast]);
 
   // Handle volume changes
   useEffect(() => {
@@ -64,17 +120,16 @@ const Player = () => {
   // Handle playing state changes
   useEffect(() => {
     const audio = audioRef.current;
-    if (!audio || !currentSrc) return;
-
+    if (!audio || !currentTrack || currentTrack.playback?.kind === 'youtube-embed') return;
     if (playing) {
-      audio.play().catch(error => {
-        console.error('Failed to play audio:', error);
+      audio.play().catch(e => {
+        console.warn('audio.play() failed', e?.name, e?.message);
         setPlaying(false);
       });
     } else {
       audio.pause();
     }
-  }, [playing, currentSrc, setPlaying]);
+  }, [playing, currentTrack, setPlaying]);
 
   // Audio event handlers
   const handleTimeUpdate = () => {
@@ -119,21 +174,32 @@ const Player = () => {
     return `${mins}:${secs.toString().padStart(2, '0')}`;
   };
 
-  // Don't render if no track
   if (!currentTrack) {
     return null;
   }
 
   return (
-    <div className="fixed bottom-0 left-0 right-0 h-24 bg-gray-900 border-t border-gray-800 flex items-center justify-between px-4 z-50">
-      {/* Hidden audio element */}
+    <div className="h-24 bg-gray-900 border-t border-gray-800 px-4 flex items-center justify-between gap-4">
       <audio
         ref={audioRef}
+        crossOrigin="anonymous"
         onTimeUpdate={handleTimeUpdate}
         onLoadedMetadata={handleLoadedMetadata}
         onEnded={handleEnded}
+        className="hidden"
         preload="metadata"
       />
+
+      {currentTrack.playback?.kind === 'youtube-embed' && (
+        <iframe
+          src={getYoutubeEmbedUrl(currentTrack.playback.url)}
+          title="YouTube player"
+          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+          referrerPolicy="strict-origin-when-cross-origin"
+          frameBorder="0"
+          style={{ display: 'none' }}
+        />
+      )}
 
       {/* Current Track Info */}
       <div className="flex items-center gap-4 w-80">
@@ -148,16 +214,16 @@ const Player = () => {
             <div className="text-gray-400 text-xs">♪</div>
           )}
         </div>
-        
+
         <div className="flex-1 min-w-0">
           <div className="text-white text-sm font-medium truncate">
             {currentTrack.title}
           </div>
           <div className="text-gray-400 text-xs truncate">
-            {currentTrack.artistName}
+            {currentTrack.artist || currentTrack.artistName}
           </div>
         </div>
-        
+
         <Button
           variant="ghost"
           size="sm"
@@ -178,7 +244,7 @@ const Player = () => {
           >
             <Shuffle size={16} />
           </Button>
-          
+
           <Button
             variant="ghost"
             size="sm"
@@ -188,14 +254,15 @@ const Player = () => {
           >
             <SkipBack size={16} />
           </Button>
-          
+
           <Button
             onClick={handlePlayPause}
+            disabled={duration === 0}
             className="w-8 h-8 rounded-full bg-white text-black hover:bg-gray-200 flex items-center justify-center"
           >
             {playing ? <Pause size={16} /> : <Play size={16} />}
           </Button>
-          
+
           <Button
             variant="ghost"
             size="sm"
@@ -205,7 +272,7 @@ const Player = () => {
           >
             <SkipForward size={16} />
           </Button>
-          
+
           <Button
             variant="ghost"
             size="sm"
@@ -240,7 +307,7 @@ const Player = () => {
         <div className="text-xs text-gray-400 mr-4">
           {queue.length > 0 && `${currentIndex + 1} / ${queue.length}`}
         </div>
-        
+
         <div className="flex items-center gap-2">
           <Volume2 size={16} className="text-gray-400" />
           <Slider

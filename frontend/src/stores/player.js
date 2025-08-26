@@ -2,7 +2,6 @@ import { create } from 'zustand';
 
 export const usePlayerStore = create((set, get) => ({
   // Initial state
-  currentSrc: null,
   currentTrack: null,
   playing: false,
   progress: 0,
@@ -24,10 +23,8 @@ export const usePlayerStore = create((set, get) => ({
 
   // Track management
   playTrack: (track) => {
-    const src = track.objectUrl || track.sourceId;
     set({
       currentTrack: track,
-      currentSrc: src,
       queue: [track],
       currentIndex: 0,
       playing: true,
@@ -40,13 +37,11 @@ export const usePlayerStore = create((set, get) => ({
     
     const safeIndex = Math.max(0, Math.min(startIndex, tracks.length - 1));
     const track = tracks[safeIndex];
-    const src = track.objectUrl || track.sourceId;
-    
+
     set({
       queue: tracks,
       currentIndex: safeIndex,
       currentTrack: track,
-      currentSrc: src,
       playing: true,
       progress: 0
     });
@@ -83,12 +78,10 @@ export const usePlayerStore = create((set, get) => ({
     }
     
     const track = state.queue[nextIndex];
-    const src = track.objectUrl || track.sourceId;
-    
+
     set({
       currentIndex: nextIndex,
       currentTrack: track,
-      currentSrc: src,
       playing: true,
       progress: 0
     });
@@ -114,12 +107,10 @@ export const usePlayerStore = create((set, get) => ({
     }
     
     const track = state.queue[prevIndex];
-    const src = track.objectUrl || track.sourceId;
-    
+
     set({
       currentIndex: prevIndex,
       currentTrack: track,
-      currentSrc: src,
       playing: true,
       progress: 0
     });

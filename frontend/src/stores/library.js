@@ -75,14 +75,7 @@ export const useLibraryStore = create((set, get) => ({
       trackIds: playlist.trackIds.filter(id => !removeIds.has(id))
     }));
     
-    // Clean up object URLs for removed tracks
-    state.tracks
-      .filter(track => removeIds.has(track.id) && track.objectUrl)
-      .forEach(track => {
-        URL.revokeObjectURL(track.objectUrl);
-      });
-    
-    set({ 
+    set({
       tracks: updatedTracks,
       playlists: updatedPlaylists
     });

@@ -19,14 +19,10 @@ db = client[os.environ['DB_NAME']]
 
 app = FastAPI()
 
-ALLOWED_ORIGINS = list(filter(None, [
-    os.getenv("FRONTEND_ORIGIN"),
-    "http://localhost:3000"
-]))
+ALLOWED_ORIGINS = [o for o in [os.getenv("FRONTEND_ORIGIN"), "http://localhost:3000"] if o]
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=ALLOWED_ORIGINS or ["http://localhost:3000"],
-    allow_credentials=True,
+    allow_origins=ALLOWED_ORIGINS,
     allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
     allow_headers=["*"],
     expose_headers=["Content-Disposition"],

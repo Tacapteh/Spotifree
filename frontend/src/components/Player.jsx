@@ -5,11 +5,7 @@ import { Slider } from './ui/slider';
 import { usePlayerStore } from '../stores/player';
 import { useToast } from '../hooks/use-toast';
 
-const isHlsUrl = (url) => /.m3u8($|\?)/i.test(url);
-const getYoutubeEmbedUrl = (url) => {
-  const match = url?.match(/[?&]v=([^&]+)/) || url?.match(/youtu\.be\/([^?]+)/);
-  return match ? `https://www.youtube.com/embed/${match[1]}?autoplay=1&rel=0` : '';
-};
+const isHls = (url) => /.m3u8($|\?)/i.test(url);
 
 const Player = () => {
   const audioRef = useRef(null);
@@ -50,13 +46,13 @@ const Player = () => {
     let hls;
     const load = async () => {
       try {
-        audioEl.crossOrigin = 'anonymous';
-
         if (currentTrack.playback?.kind === 'youtube-embed') {
           return;
         }
 
-        if (currentTrack.playback?.kind === 'hls') {
+        audioEl.crossOrigin = 'anonymous';
+
+        if (currentTrack.playback?.kind === 'hls' || isHls(currentTrack.playback?.url)) {
           if (audioEl.canPlayType('application/vnd.apple.mpegurl')) {
             audioEl.src = currentTrack.playback.url;
           } else {
@@ -94,6 +90,7 @@ const Player = () => {
             await audioEl.play();
           } catch (e) {
             console.warn('audio.play() failed', e?.name, e?.message);
+            toast({ title: 'Lecture impossible (format ou CORS)' });
           }
         }
       } catch (err) {
@@ -125,11 +122,12 @@ const Player = () => {
       audio.play().catch(e => {
         console.warn('audio.play() failed', e?.name, e?.message);
         setPlaying(false);
+        toast({ title: 'Lecture impossible (format ou CORS)' });
       });
     } else {
       audio.pause();
     }
-  }, [playing, currentTrack, setPlaying]);
+  }, [playing, currentTrack, setPlaying, toast]);
 
   // Audio event handlers
   const handleTimeUpdate = () => {
@@ -192,8 +190,8 @@ const Player = () => {
 
       {currentTrack.playback?.kind === 'youtube-embed' && (
         <iframe
-          src={getYoutubeEmbedUrl(currentTrack.playback.url)}
-          title="YouTube player"
+          src={`https://www.youtube.com/embed/${currentTrack.playback.videoId}?autoplay=1&rel=0`}
+          title={currentTrack.title}
           allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
           referrerPolicy="strict-origin-when-cross-origin"
           frameBorder="0"

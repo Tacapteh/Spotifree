@@ -96,14 +96,13 @@ const LocalImport = () => {
 
         const track = {
           id: nanoid(),
-          source: 'local',
-          sourceId: file.name,
+          source: 'fma',
           title,
+          artist,
           artistName: artist,
           artistId,
           durationMs: duration,
-          playable: 'local',
-          objectUrl
+          playback: { kind: 'direct', url: objectUrl, mime: file.type }
         };
 
         tracks.push(track);

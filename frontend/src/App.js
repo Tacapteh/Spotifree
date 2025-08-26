@@ -13,7 +13,6 @@ import HomeArtists from "./components/HomeArtists";
 import Search from "./components/Search";
 import Playlists from "./components/Playlists";
 import History from "./components/History";
-import YouTubeDownloader from "./components/YouTubeDownloader";
 import LibraryView from "./components/LibraryView";
 import Player from "./components/Player";
 
@@ -121,9 +120,6 @@ function App() {
       
       case 'history':
         return <History />;
-      
-      case 'youtube':
-        return <YouTubeDownloader />;
       
       default:
         return (

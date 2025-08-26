@@ -4,48 +4,18 @@ import Sidebar from './components/Sidebar';
 import MainContent from './components/MainContent';
 import MusicPlayer from './components/MusicPlayer';
 import LocalPlayer from './components/LocalPlayer';
-import YouTubeDownloader from './components/YouTubeDownloader';
 import { Button } from './components/ui/button';
-import { Home, Music, Download } from 'lucide-react';
+import { Home, Music } from 'lucide-react';
 import { Toaster } from './components/ui/toaster';
 import { mockTrendingSongs } from './data/mockData';
 
 const SpotifyApp = () => {
   const [currentTrack, setCurrentTrack] = useState(null);
-  const [currentView, setCurrentView] = useState('discover'); // 'discover', 'local', or 'youtube'
+  const [currentView, setCurrentView] = useState('discover'); // 'discover' or 'local'
 
   const handleTrackSelect = (track) => {
     setCurrentTrack(track);
   };
-
-  // YouTube Downloader View
-  if (currentView === 'youtube') {
-    return (
-      <div className="h-screen bg-black flex flex-col">
-        {/* Header Navigation */}
-        <div className="h-16 bg-gray-900 border-b border-gray-800 flex items-center justify-between px-6">
-          <div className="flex items-center gap-4">
-            <Button
-              onClick={() => setCurrentView('discover')}
-              variant="ghost" 
-              className="text-gray-400 hover:text-white flex items-center gap-2"
-            >
-              <Home size={20} />
-              Retour à l'accueil
-            </Button>
-          </div>
-          <div className="flex items-center gap-2">
-            <Download className="text-red-500 w-6 h-6" />
-            <span className="text-white font-semibold">Téléchargeur YouTube</span>
-          </div>
-        </div>
-        <div className="flex-1">
-          <YouTubeDownloader />
-        </div>
-        <Toaster />
-      </div>
-    );
-  }
 
   // Local Player View
   if (currentView === 'local') {
@@ -90,14 +60,6 @@ const SpotifyApp = () => {
             >
               <Music size={16} />
               Lecteur Local
-            </Button>
-            <Button
-              onClick={() => setCurrentView('youtube')}
-              variant="outline"
-              className="w-full text-sm bg-gray-900 border-gray-700 text-white hover:bg-gray-800 hover:border-red-500 transition-colors flex items-center gap-2"
-            >
-              <Download size={16} />
-              YouTube Downloader
             </Button>
           </div>
         </div>

@@ -15,7 +15,6 @@ const Navigation = ({ currentView, onViewChange }) => {
   const libraryItems = [
     { id: 'playlists', icon: BookOpen, label: 'Playlists' },
     { id: 'history', icon: Clock, label: 'Historique' },
-    { id: 'youtube', icon: Download, label: 'YouTube Downloader' },
   ];
 
   return (
@@ -66,13 +65,6 @@ const Navigation = ({ currentView, onViewChange }) => {
           >
             <item.icon size={20} />
             <span className="text-sm">{item.label}</span>
-            {item.id === 'youtube' && (
-              <div className="ml-auto">
-                <span className="text-xs bg-red-600 text-white px-2 py-0.5 rounded-full">
-                  NEW
-                </span>
-              </div>
-            )}
           </button>
         ))}
       </div>

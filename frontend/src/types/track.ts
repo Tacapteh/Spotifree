@@ -9,5 +9,6 @@ export interface Track {
     kind: "direct" | "hls" | "youtube-embed";
     url?: string;
     mime?: string;
+    videoId?: string;
   };
 }

@@ -30,7 +30,7 @@ J'ai créé un **clone Spotify pixel-perfect et fonctionnel** avec toutes les fo
 - **Cartes de statistiques** colorées
 - **Historique chronologique** avec pourcentage d'écoute
 
-### 📥 **YouTube Downloader** (Réintégré)
+### 📥 **YouTube Downloader**
 - **Interface complète** avec avertissements légaux
 - **Analyse vidéo** avec métadonnées (titre, durée, vues)
 - **Téléchargement MP3** haute qualité (192kbps)

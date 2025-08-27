@@ -1,5 +1,18 @@
 import { create } from 'zustand';
 
+// Ensure a track has a playback object based on common fields
+const normalizeTrack = (track) => {
+  if (track.playback) return track;
+  if (track.url) {
+    const youtubeMatch = track.url.match(/[?&]v=([^&]+)/);
+    if (youtubeMatch) {
+      return { ...track, playback: { kind: 'youtube-embed', videoId: youtubeMatch[1] } };
+    }
+    return { ...track, playback: { kind: 'direct', url: track.url } };
+  }
+  return track;
+};
+
 export const usePlayerStore = create((set, get) => ({
   // Initial state
   currentTrack: null,
@@ -23,9 +36,10 @@ export const usePlayerStore = create((set, get) => ({
 
   // Track management
   playTrack: (track) => {
+    const normalized = normalizeTrack(track);
     set({
-      currentTrack: track,
-      queue: [track],
+      currentTrack: normalized,
+      queue: [normalized],
       currentIndex: 0,
       playing: true,
       progress: 0
@@ -34,12 +48,13 @@ export const usePlayerStore = create((set, get) => ({
 
   playQueue: (tracks, startIndex = 0) => {
     if (tracks.length === 0) return;
-    
+
     const safeIndex = Math.max(0, Math.min(startIndex, tracks.length - 1));
-    const track = tracks[safeIndex];
+    const normalizedTracks = tracks.map(normalizeTrack);
+    const track = normalizedTracks[safeIndex];
 
     set({
-      queue: tracks,
+      queue: normalizedTracks,
       currentIndex: safeIndex,
       currentTrack: track,
       playing: true,

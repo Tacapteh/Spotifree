@@ -1,13 +1,12 @@
 import logging
 import os
 import random
-import time
 import uuid
 from datetime import datetime
 from pathlib import Path
 from typing import List
 
-import youtube_dl
+import asyncio
 import yt_dlp
 from dotenv import load_dotenv
 from fastapi import APIRouter, FastAPI, HTTPException
@@ -99,7 +98,9 @@ async def get_status_checks():
 
 @api_router.post("/youtube/info")
 async def youtube_info(input: YouTubeInfoRequest):
-    with youtube_dl.YoutubeDL({"skip_download": True}) as ydl:
+    """Return basic information about a YouTube video."""
+    opts = {"quiet": True, "no_warnings": True, "skip_download": True}
+    with yt_dlp.YoutubeDL(opts) as ydl:
         info = ydl.extract_info(input.url, download=False)
     return {"title": info.get("title"), "duration": info.get("duration")}
 
@@ -144,7 +145,7 @@ async def youtube_download(input: YouTubeDownloadRequest):
         "keep_fragments": False,
         "abort_on_unavailable_fragment": False,
     }
-    time.sleep(random.uniform(1, 3))
+    await asyncio.sleep(random.uniform(1, 3))
     try:
         with yt_dlp.YoutubeDL(ydl_opts) as ydl:
             info = ydl.extract_info(input.url, download=True)

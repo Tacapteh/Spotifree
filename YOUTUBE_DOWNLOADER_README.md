@@ -22,17 +22,15 @@ Cette fonctionnalité de téléchargement YouTube doit être utilisée conformé
 ### ✅ Ce qui est implémenté :
 
 1. **Interface intégrée** dans l'application Spotify clone
-2. **Extraction d'informations** vidéo YouTube (titre, artiste, durée, miniature)
-3. **Téléchargement audio** en MP3 haute qualité (192kbps)
-4. **Gestion des téléchargements** avec base de données MongoDB
-5. **Interface utilisateur** intuitive avec notifications
-6. **Avertissements légaux** bien visibles
+2. **Téléchargement audio** en MP3 haute qualité (192kbps)
+3. **Gestion des téléchargements** avec base de données MongoDB
+4. **Interface utilisateur** intuitive avec notifications
+5. **Avertissements légaux** bien visibles
 
 ### 🔧 API Backend
 
 Les endpoints suivants sont disponibles :
 
-- `POST /api/youtube/info` - Obtenir les informations d'une vidéo
 - `POST /api/youtube/download` - Télécharger l'audio en MP3
 - `GET /api/youtube/downloads` - Liste des téléchargements
 - `GET /api/youtube/download/{id}/stream` - Streamer un fichier téléchargé
@@ -48,9 +46,7 @@ Les endpoints suivants sont disponibles :
 ### 2. Télécharger une vidéo
 1. Copiez l'URL YouTube de la vidéo (ex: `https://www.youtube.com/watch?v=dQw4w9WgXcQ`)
 2. Collez l'URL dans le champ de saisie
-3. Cliquez sur "Analyser" pour récupérer les informations
-4. Vérifiez les informations affichées (titre, artiste, durée)
-5. Cliquez sur "Télécharger en MP3" pour lancer le téléchargement
+3. Cliquez sur "Télécharger en MP3" pour lancer le téléchargement
 
 ### 3. Gérer vos téléchargements
 - Tous les téléchargements apparaissent dans la section "Téléchargements"

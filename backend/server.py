@@ -68,13 +68,8 @@ class StatusCheckCreate(BaseModel):
     client_name: str
 
 
-class VideoInfoRequest(BaseModel):
-    url: str
-
-
 class VideoDownloadRequest(BaseModel):
     url: str
-    format: str = "mp3"
 
 
 @api_router.get("/")
@@ -94,45 +89,6 @@ async def create_status_check(input: StatusCheckCreate):
 async def get_status_checks():
     status_checks = await db.status_checks.find().to_list(1000)
     return [StatusCheck(**s) for s in status_checks]
-
-
-@api_router.post("/video/info")
-async def video_info(input: VideoInfoRequest):
-    """Return information about a video from various platforms."""
-    headers = {
-        "User-Agent": (
-            "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
-            "(KHTML, like Gecko) Chrome/115.0.0.0 Safari/537.36"
-        ),
-        "Accept": (
-            "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8"  # noqa: E501
-        ),
-        "Accept-Language": "en-us,en;q=0.5",
-        "Accept-Encoding": "gzip,deflate",
-        "Accept-Charset": "ISO-8859-1,utf-8;q=0.7,*;q=0.7",
-        "Keep-Alive": "300",
-        "Connection": "keep-alive",
-    }
-    opts = {
-        "quiet": True,
-        "no_warnings": True,
-        "skip_download": True,
-        "http_headers": headers,
-    }
-    try:
-        with yt_dlp.YoutubeDL(opts) as ydl:
-            info = ydl.extract_info(input.url, download=False)
-    except Exception as e:
-        logger.error("Info extraction failed: %s", e)
-        raise HTTPException(status_code=400, detail="Analyse échouée") from e
-
-    if info.get("availability") not in [None, "public"]:
-        raise HTTPException(
-            status_code=403,
-            detail="Cette vidéo n'est pas disponible publiquement.",
-        )
-
-    return {"title": info.get("title"), "duration": info.get("duration")}
 
 
 @api_router.post("/video/download")
@@ -182,7 +138,7 @@ async def video_download(input: VideoDownloadRequest):
             "postprocessors": [
                 {
                     "key": "FFmpegExtractAudio",
-                    "preferredcodec": input.format,
+                    "preferredcodec": "mp3",
                     "preferredquality": quality,
                 }
             ],
@@ -217,13 +173,13 @@ async def video_download(input: VideoDownloadRequest):
             detail="Cette vidéo n'est pas disponible publiquement.",
         )
 
-    file_path = DOWNLOAD_DIR / f"{info['id']}.{input.format}"
+    file_path = DOWNLOAD_DIR / f"{info['id']}.mp3"
     if not file_path.exists():
         raise HTTPException(
             status_code=500,
             detail="Fichier introuvable après le téléchargement",
         )
-    filename = f"{info.get('title', 'video')}.{input.format}"
+    filename = f"{info.get('title', 'video')}.mp3"
     return FileResponse(
         file_path, filename=filename, media_type="application/octet-stream"
     )

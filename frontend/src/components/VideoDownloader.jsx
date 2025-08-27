@@ -5,31 +5,8 @@ import { Button } from "./ui/button";
 
 const VideoDownloader = () => {
   const [url, setUrl] = useState("");
-  const [info, setInfo] = useState(null);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
-
-  const handleAnalyze = async () => {
-    setLoading(true);
-    setError("");
-    setInfo(null);
-    try {
-      const res = await axios.post("/api/video/info", { url });
-      setInfo(res.data);
-    } catch (e) {
-      let errorMessage = "Analyse échouée";
-      if (e.response?.data?.detail) {
-        errorMessage = e.response.data.detail;
-      } else if (e.response?.status === 403) {
-        errorMessage = "La plateforme a bloqué cette requête. Essayez plus tard.";
-      } else if (e.response?.status === 429) {
-        errorMessage = "Trop de requêtes. Attendez quelques minutes.";
-      }
-      setError(errorMessage);
-    } finally {
-      setLoading(false);
-    }
-  };
 
   const handleDownload = async () => {
     setLoading(true);
@@ -42,7 +19,12 @@ const VideoDownloader = () => {
       );
       const blobUrl = window.URL.createObjectURL(res.data);
       const a = document.createElement("a");
-      const filename = info?.title ? `${info.title}.mp3` : "audio.mp3";
+      const disposition = res.headers["content-disposition"];
+      let filename = "audio.mp3";
+      if (disposition) {
+        const match = disposition.match(/filename="?([^";]+)"?/);
+        if (match) filename = match[1];
+      }
       a.href = blobUrl;
       a.download = filename;
       document.body.appendChild(a);
@@ -74,8 +56,8 @@ const VideoDownloader = () => {
           onChange={(e) => setUrl(e.target.value)}
           className="flex-1"
         />
-        <Button onClick={handleAnalyze} disabled={!url || loading}>
-          Analyser
+        <Button onClick={handleDownload} disabled={!url || loading}>
+          {loading ? "Téléchargement..." : "Télécharger en MP3"}
         </Button>
       </div>
       <div className="p-4 bg-blue-900/20 border border-blue-500/20 rounded-lg">
@@ -89,20 +71,7 @@ const VideoDownloader = () => {
           <li>• Essayez du contenu éducatif ou Creative Commons</li>
         </ul>
       </div>
-      {info && (
-        <div className="p-4 bg-gray-800 rounded">
-          <p className="font-medium">{info.title}</p>
-          {info.duration && (
-            <p className="text-sm text-gray-400">Durée: {info.duration}s</p>
-          )}
-        </div>
-      )}
       {error && <p className="text-red-500 text-sm">{error}</p>}
-      {info && (
-        <Button onClick={handleDownload} disabled={loading}>
-          {loading ? "Téléchargement..." : "Télécharger en MP3"}
-        </Button>
-      )}
     </div>
   );
 };

@@ -10,6 +10,7 @@ const Navigation = ({ currentView, onViewChange }) => {
     { id: 'home', icon: Home, label: 'Accueil' },
     { id: 'search', icon: SearchIcon, label: 'Rechercher' },
     { id: 'library', icon: Library, label: 'Votre bibliothèque' },
+    { id: 'downloader', icon: Download, label: 'Téléchargeur' },
   ];
 
   const libraryItems = [

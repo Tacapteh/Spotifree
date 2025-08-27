@@ -15,6 +15,7 @@ import Playlists from "./components/Playlists";
 import History from "./components/History";
 import LibraryView from "./components/LibraryView";
 import Player from "./components/Player";
+import YouTubeDownloader from "./components/YouTubeDownloader";
 
 function App() {
   const [currentView, setCurrentView] = useState('home');
@@ -114,13 +115,16 @@ function App() {
       
       case 'library':
         return <LibraryView />;
-      
+
       case 'playlists':
         return <Playlists />;
-      
+
       case 'history':
         return <History />;
-      
+
+      case 'downloader':
+        return <YouTubeDownloader />;
+
       default:
         return (
           <div className="p-8 text-center text-gray-400">

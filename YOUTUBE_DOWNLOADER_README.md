@@ -61,6 +61,7 @@ Les endpoints suivants sont disponibles :
 
 ### Dépendances Python installées :
 - `yt-dlp>=2024.1.30` - Successeur maintenu de youtube-dl
+- `youtube-dl>=2021.12.17` - Version classique de l'outil
 - `ffmpeg-python>=0.2.0` - Conversion audio
 - `ffmpeg` - Outil de conversion (installé au niveau système)
 

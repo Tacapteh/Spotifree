@@ -3,7 +3,7 @@ import axios from "axios";
 import { Input } from "./ui/input";
 import { Button } from "./ui/button";
 
-const YouTubeDownloader = () => {
+const VideoDownloader = () => {
   const [url, setUrl] = useState("");
   const [info, setInfo] = useState(null);
   const [error, setError] = useState("");
@@ -14,14 +14,14 @@ const YouTubeDownloader = () => {
     setError("");
     setInfo(null);
     try {
-      const res = await axios.post("/api/youtube/info", { url });
+      const res = await axios.post("/api/video/info", { url });
       setInfo(res.data);
     } catch (e) {
       let errorMessage = "Analyse échouée";
       if (e.response?.data?.detail) {
         errorMessage = e.response.data.detail;
       } else if (e.response?.status === 403) {
-        errorMessage = "YouTube a bloqué cette requête. Essayez plus tard.";
+        errorMessage = "La plateforme a bloqué cette requête. Essayez plus tard.";
       } else if (e.response?.status === 429) {
         errorMessage = "Trop de requêtes. Attendez quelques minutes.";
       }
@@ -36,7 +36,7 @@ const YouTubeDownloader = () => {
     setError("");
     try {
       const res = await axios.post(
-        "/api/youtube/download",
+        "/api/video/download",
         { url },
         { responseType: "blob" },
       );
@@ -54,7 +54,7 @@ const YouTubeDownloader = () => {
       if (e.response?.data?.detail) {
         errorMessage = e.response.data.detail;
       } else if (e.response?.status === 403) {
-        errorMessage = "YouTube a bloqué cette requête. Essayez plus tard.";
+        errorMessage = "La plateforme a bloqué cette requête. Essayez plus tard.";
       } else if (e.response?.status === 429) {
         errorMessage = "Trop de requêtes. Attendez quelques minutes.";
       }
@@ -66,10 +66,10 @@ const YouTubeDownloader = () => {
 
   return (
     <div className="p-8 max-w-xl mx-auto space-y-4">
-      <h1 className="text-2xl font-bold">Téléchargeur YouTube</h1>
+      <h1 className="text-2xl font-bold">Convertisseur Vidéo en MP3</h1>
       <div className="flex gap-2">
         <Input
-          placeholder="URL YouTube"
+          placeholder="URL de la vidéo (YouTube, Vimeo, etc.)"
           value={url}
           onChange={(e) => setUrl(e.target.value)}
           className="flex-1"
@@ -85,7 +85,7 @@ const YouTubeDownloader = () => {
         <ul className="text-blue-200 space-y-1 text-xs">
           <li>• Utilisez des vidéos courtes (moins de 10 minutes)</li>
           <li>• Évitez les vidéos avec restrictions géographiques</li>
-          <li>• Les vidéos musicales populaires peuvent être bloquées</li>
+          <li>• Certaines vidéos populaires peuvent être bloquées</li>
           <li>• Essayez du contenu éducatif ou Creative Commons</li>
         </ul>
       </div>
@@ -107,4 +107,4 @@ const YouTubeDownloader = () => {
   );
 };
 
-export default YouTubeDownloader;
+export default VideoDownloader;

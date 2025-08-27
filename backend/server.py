@@ -68,11 +68,11 @@ class StatusCheckCreate(BaseModel):
     client_name: str
 
 
-class YouTubeInfoRequest(BaseModel):
+class VideoInfoRequest(BaseModel):
     url: str
 
 
-class YouTubeDownloadRequest(BaseModel):
+class VideoDownloadRequest(BaseModel):
     url: str
     format: str = "mp3"
 
@@ -96,9 +96,9 @@ async def get_status_checks():
     return [StatusCheck(**s) for s in status_checks]
 
 
-@api_router.post("/youtube/info")
-async def youtube_info(input: YouTubeInfoRequest):
-    """Return info about a YouTube video with better reliability."""
+@api_router.post("/video/info")
+async def video_info(input: VideoInfoRequest):
+    """Return information about a video from various platforms."""
     headers = {
         "User-Agent": (
             "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
@@ -112,8 +112,6 @@ async def youtube_info(input: YouTubeInfoRequest):
         "Accept-Charset": "ISO-8859-1,utf-8;q=0.7,*;q=0.7",
         "Keep-Alive": "300",
         "Connection": "keep-alive",
-        "X-YouTube-Client-Name": "1",
-        "X-YouTube-Client-Version": "2.20240101.00.00",
     }
     opts = {
         "quiet": True,
@@ -137,8 +135,8 @@ async def youtube_info(input: YouTubeInfoRequest):
     return {"title": info.get("title"), "duration": info.get("duration")}
 
 
-@api_router.post("/youtube/download")
-async def youtube_download(input: YouTubeDownloadRequest):
+@api_router.post("/video/download")
+async def video_download(input: VideoDownloadRequest):
     headers = {
         "User-Agent": (
             "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
@@ -152,8 +150,6 @@ async def youtube_download(input: YouTubeDownloadRequest):
         "Accept-Charset": "ISO-8859-1,utf-8;q=0.7,*;q=0.7",
         "Keep-Alive": "300",
         "Connection": "keep-alive",
-        "X-YouTube-Client-Name": "1",
-        "X-YouTube-Client-Version": "2.20240101.00.00",
     }
     base_opts = {
         "outtmpl": str(DOWNLOAD_DIR / "%(id)s.%(ext)s"),
@@ -161,10 +157,8 @@ async def youtube_download(input: YouTubeDownloadRequest):
         "no_warnings": True,
         "http_headers": headers,
         "geo_bypass": True,
-        "geo_bypass_country": "US",
         "age_limit": None,
         "no_check_certificate": True,
-        "youtube_include_dash_manifest": False,
         "skip_unavailable_fragments": True,
         "keep_fragments": False,
         "abort_on_unavailable_fragment": False,
@@ -206,7 +200,7 @@ async def youtube_download(input: YouTubeDownloadRequest):
     if info is None:
         error_msg = str(last_error)
         if "403" in error_msg or "Forbidden" in error_msg:
-            detail = "YouTube a temporairement bloqué cette requête..."
+            detail = "La plateforme vidéo a temporairement bloqué cette requête..."
         elif "404" in error_msg or "not available" in error_msg:
             detail = "Cette vidéo n'est pas disponible ou a été supprimée."
         elif "private" in error_msg.lower():

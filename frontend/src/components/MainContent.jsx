@@ -155,7 +155,7 @@ const MainContent = ({ onTrackSelect }) => {
         {/* Good afternoon section */}
         <div className="mb-8">
           <h1 className="text-3xl font-bold mb-6">Good afternoon</h1>
-          <div className="grid grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
             {['Liked Songs', 'Daily Mix 1', 'Discover Weekly', 'Release Radar', 'Chill Hits', 'Your Top Songs 2024'].map((playlist, index) => (
               <div key={index} className="bg-gray-800 rounded-md flex items-center overflow-hidden hover:bg-gray-700 transition-colors cursor-pointer group">
                 <div className="w-16 h-16 bg-gradient-to-br from-purple-500 to-blue-500 flex items-center justify-center">

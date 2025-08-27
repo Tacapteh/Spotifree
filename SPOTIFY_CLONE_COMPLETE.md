@@ -32,7 +32,6 @@ J'ai créé un **clone Spotify pixel-perfect et fonctionnel** avec toutes les fo
 
 ### 📥 **YouTube Downloader**
 - **Interface complète** avec avertissements légaux
-- **Analyse vidéo** avec métadonnées (titre, durée, vues)
 - **Téléchargement MP3** haute qualité (192kbps)
 - **Intégration bibliothèque** automatique
 - **Gestion des téléchargements** avec lecture directe
@@ -105,7 +104,6 @@ J'ai créé un **clone Spotify pixel-perfect et fonctionnel** avec toutes les fo
 
 ### **YouTube Downloader API**
 ```
-POST /api/youtube/info       - Analyser vidéo
 POST /api/youtube/download   - Télécharger MP3
 GET  /api/youtube/downloads  - Lister téléchargements
 GET  /api/youtube/download/{id}/stream - Streamer fichier
@@ -211,7 +209,7 @@ Lecture pistes → Tracking automatique → Statistiques → Recommandations
 
 ### **4. Extension YouTube**
 ```
-URL YouTube → Analyse vidéo → Téléchargement MP3 → Intégration bibliothèque
+URL YouTube → Téléchargement MP3 → Intégration bibliothèque
 ```
 
 ## 🎯 Résultat Final

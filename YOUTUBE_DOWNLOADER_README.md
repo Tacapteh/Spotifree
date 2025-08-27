@@ -59,7 +59,8 @@ Les endpoints suivants sont disponibles :
 - `yt-dlp>=2024.1.30` - Successeur maintenu de youtube-dl
 - `youtube-dl>=2021.12.17` - Version classique de l'outil
 - `ffmpeg-python>=0.2.0` - Conversion audio
-- `ffmpeg` - Outil de conversion (installé au niveau système)
+- `imageio-ffmpeg>=0.4.8` - Fournit automatiquement le binaire ffmpeg
+- `ffmpeg` - Outil de conversion (fourni automatiquement)
 
 ### Formats supportés :
 - MP3 (par défaut, 192kbps)
@@ -99,7 +100,7 @@ Les endpoints suivants sont disponibles :
 
 ### Support technique :
 - Vérifiez les logs du backend pour plus de détails sur les erreurs
-- Assurez-vous que ffmpeg est correctement installé
+- Le binaire ffmpeg est téléchargé automatiquement; vérifiez son téléchargement en cas d'erreur
 - Les téléchargements sont stockés temporairement et peuvent être nettoyés
 
 ## 📞 Responsabilité

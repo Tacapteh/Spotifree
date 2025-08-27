@@ -18,9 +18,9 @@ const MusicPlayer = ({ currentTrack }) => {
   };
 
   return (
-    <div className="h-24 bg-gray-900 border-t border-gray-800 flex items-center justify-between px-4">
+    <div className="bg-gray-900 border-t border-gray-800 flex flex-col md:flex-row items-center justify-between px-4 py-2 md:h-24 gap-2">
       {/* Current Track Info */}
-      <div className="flex items-center gap-4 w-80">
+      <div className="flex items-center gap-4 w-full md:w-80 mb-2 md:mb-0">
         {currentTrack && (
           <>
             <img 
@@ -49,7 +49,7 @@ const MusicPlayer = ({ currentTrack }) => {
       </div>
 
       {/* Player Controls */}
-      <div className="flex flex-col items-center gap-2 flex-1 max-w-2xl">
+      <div className="flex flex-col items-center gap-2 w-full flex-1 md:max-w-2xl">
         <div className="flex items-center gap-4">
           <Button
             variant="ghost"
@@ -103,7 +103,7 @@ const MusicPlayer = ({ currentTrack }) => {
       </div>
 
       {/* Volume & Additional Controls */}
-      <div className="flex items-center gap-2 w-80 justify-end">
+      <div className="flex items-center gap-2 w-full md:w-80 justify-end mt-2 md:mt-0">
         <Button variant="ghost" size="sm" className="p-2 text-gray-400 hover:text-white">
           <PictureInPicture2 size={16} />
         </Button>

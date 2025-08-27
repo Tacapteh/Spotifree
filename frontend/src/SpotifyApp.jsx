@@ -49,7 +49,7 @@ const SpotifyApp = () => {
   // Main Discover View
   return (
     <div className="h-screen bg-black flex flex-col">
-      <div className="flex flex-1 overflow-hidden">
+      <div className="flex flex-1 overflow-hidden flex-col md:flex-row">
         <div className="flex flex-col">
           <Sidebar />
           <div className="p-4 border-t border-gray-800 space-y-2">

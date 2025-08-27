@@ -33,12 +33,22 @@ const VideoDownloader = () => {
       window.URL.revokeObjectURL(blobUrl);
     } catch (e) {
       let errorMessage = "Téléchargement échoué";
-      if (e.response?.data?.detail) {
-        errorMessage = e.response.data.detail;
-      } else if (e.response?.status === 403) {
-        errorMessage = "La plateforme a bloqué cette requête. Essayez plus tard.";
-      } else if (e.response?.status === 429) {
-        errorMessage = "Trop de requêtes. Attendez quelques minutes.";
+      const resp = e.response;
+      if (resp?.data) {
+        try {
+          const text = await resp.data.text();
+          const parsed = JSON.parse(text);
+          if (parsed.detail) errorMessage = parsed.detail;
+        } catch (_err) {
+          // ignore JSON parse errors, fall back to status-based messages
+        }
+      }
+      if (errorMessage === "Téléchargement échoué") {
+        if (resp?.status === 403) {
+          errorMessage = "La plateforme a bloqué cette requête. Essayez plus tard.";
+        } else if (resp?.status === 429) {
+          errorMessage = "Trop de requêtes. Attendez quelques minutes.";
+        }
       }
       setError(errorMessage);
     } finally {

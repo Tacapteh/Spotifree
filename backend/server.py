@@ -7,6 +7,7 @@ from datetime import datetime
 from pathlib import Path
 from typing import List
 
+import imageio_ffmpeg
 import yt_dlp
 from dotenv import load_dotenv
 from fastapi import APIRouter, FastAPI, HTTPException
@@ -24,6 +25,8 @@ db = client[os.environ["DB_NAME"]]
 
 DOWNLOAD_DIR = Path(os.getenv("DOWNLOAD_DIR", "/tmp/music_downloads"))
 DOWNLOAD_DIR.mkdir(parents=True, exist_ok=True)
+
+FFMPEG_BINARY = imageio_ffmpeg.get_ffmpeg_exe()
 
 app = FastAPI()
 
@@ -118,6 +121,7 @@ async def video_download(input: VideoDownloadRequest):
         "skip_unavailable_fragments": True,
         "keep_fragments": False,
         "abort_on_unavailable_fragment": False,
+        "ffmpeg_location": FFMPEG_BINARY,
     }
     max_attempts = 2
     info = None
@@ -156,7 +160,7 @@ async def video_download(input: VideoDownloadRequest):
     if info is None:
         error_msg = str(last_error)
         if "403" in error_msg or "Forbidden" in error_msg:
-            detail = "La plateforme vidéo a temporairement bloqué cette requête..."
+            detail = "La plateforme a temporairement bloqué la requête..."
         elif "404" in error_msg or "not available" in error_msg:
             detail = "Cette vidéo n'est pas disponible ou a été supprimée."
         elif "private" in error_msg.lower():

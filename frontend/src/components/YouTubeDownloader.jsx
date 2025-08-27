@@ -1,23 +1,31 @@
-import React, { useState } from 'react';
-import axios from 'axios';
-import { Input } from './ui/input';
-import { Button } from './ui/button';
+import React, { useState } from "react";
+import axios from "axios";
+import { Input } from "./ui/input";
+import { Button } from "./ui/button";
 
 const YouTubeDownloader = () => {
-  const [url, setUrl] = useState('');
+  const [url, setUrl] = useState("");
   const [info, setInfo] = useState(null);
-  const [error, setError] = useState('');
+  const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
   const handleAnalyze = async () => {
     setLoading(true);
-    setError('');
+    setError("");
     setInfo(null);
     try {
-      const res = await axios.post('/api/youtube/info', { url });
+      const res = await axios.post("/api/youtube/info", { url });
       setInfo(res.data);
     } catch (e) {
-      setError(e.response?.data?.detail || 'Analyse échouée');
+      let errorMessage = "Analyse échouée";
+      if (e.response?.data?.detail) {
+        errorMessage = e.response.data.detail;
+      } else if (e.response?.status === 403) {
+        errorMessage = "YouTube a bloqué cette requête. Essayez plus tard.";
+      } else if (e.response?.status === 429) {
+        errorMessage = "Trop de requêtes. Attendez quelques minutes.";
+      }
+      setError(errorMessage);
     } finally {
       setLoading(false);
     }
@@ -25,16 +33,16 @@ const YouTubeDownloader = () => {
 
   const handleDownload = async () => {
     setLoading(true);
-    setError('');
+    setError("");
     try {
       const res = await axios.post(
-        '/api/youtube/download',
+        "/api/youtube/download",
         { url },
-        { responseType: 'blob' }
+        { responseType: "blob" },
       );
       const blobUrl = window.URL.createObjectURL(res.data);
-      const a = document.createElement('a');
-      const filename = info?.title ? `${info.title}.mp3` : 'audio.mp3';
+      const a = document.createElement("a");
+      const filename = info?.title ? `${info.title}.mp3` : "audio.mp3";
       a.href = blobUrl;
       a.download = filename;
       document.body.appendChild(a);
@@ -42,7 +50,15 @@ const YouTubeDownloader = () => {
       a.remove();
       window.URL.revokeObjectURL(blobUrl);
     } catch (e) {
-      setError(e.response?.data?.detail || 'Téléchargement échoué');
+      let errorMessage = "Téléchargement échoué";
+      if (e.response?.data?.detail) {
+        errorMessage = e.response.data.detail;
+      } else if (e.response?.status === 403) {
+        errorMessage = "YouTube a bloqué cette requête. Essayez plus tard.";
+      } else if (e.response?.status === 429) {
+        errorMessage = "Trop de requêtes. Attendez quelques minutes.";
+      }
+      setError(errorMessage);
     } finally {
       setLoading(false);
     }
@@ -62,6 +78,17 @@ const YouTubeDownloader = () => {
           Analyser
         </Button>
       </div>
+      <div className="p-4 bg-blue-900/20 border border-blue-500/20 rounded-lg">
+        <p className="font-medium text-blue-400 mb-2">
+          💡 Conseils pour un téléchargement réussi :
+        </p>
+        <ul className="text-blue-200 space-y-1 text-xs">
+          <li>• Utilisez des vidéos courtes (moins de 10 minutes)</li>
+          <li>• Évitez les vidéos avec restrictions géographiques</li>
+          <li>• Les vidéos musicales populaires peuvent être bloquées</li>
+          <li>• Essayez du contenu éducatif ou Creative Commons</li>
+        </ul>
+      </div>
       {info && (
         <div className="p-4 bg-gray-800 rounded">
           <p className="font-medium">{info.title}</p>
@@ -73,7 +100,7 @@ const YouTubeDownloader = () => {
       {error && <p className="text-red-500 text-sm">{error}</p>}
       {info && (
         <Button onClick={handleDownload} disabled={loading}>
-          {loading ? 'Téléchargement...' : 'Télécharger en MP3'}
+          {loading ? "Téléchargement..." : "Télécharger en MP3"}
         </Button>
       )}
     </div>

@@ -50,23 +50,30 @@ const Player = () => {
           return;
         }
 
-        audioEl.crossOrigin = 'anonymous';
-
-        if (currentTrack.playback?.kind === 'hls' || isHls(currentTrack.playback?.url)) {
-          if (audioEl.canPlayType('application/vnd.apple.mpegurl')) {
-            audioEl.src = currentTrack.playback.url;
-          } else {
-            console.warn('HLS fallback to hls.js');
-            const Hls = (await import('hls.js')).default;
-            hls = new Hls();
-            hls.loadSource(currentTrack.playback.url);
-            hls.attachMedia(audioEl);
-          }
-        } else if (currentTrack.playback?.kind === 'direct') {
+        if (currentTrack.playback?.kind === 'direct') {
+          // Local blob URLs don't need CORS and some browsers fail if set
+          audioEl.removeAttribute('crossorigin');
           audioEl.src = currentTrack.playback.url;
         } else {
-          audioEl.removeAttribute('src');
+          audioEl.crossOrigin = 'anonymous';
+          if (currentTrack.playback?.kind === 'hls' || isHls(currentTrack.playback?.url)) {
+            if (audioEl.canPlayType('application/vnd.apple.mpegurl')) {
+              audioEl.src = currentTrack.playback.url;
+            } else {
+              console.warn('HLS fallback to hls.js');
+              const Hls = (await import('hls.js')).default;
+              hls = new Hls();
+              hls.loadSource(currentTrack.playback.url);
+              hls.attachMedia(audioEl);
+            }
+          } else if (currentTrack.playback?.url) {
+            audioEl.src = currentTrack.playback.url;
+          } else {
+            audioEl.removeAttribute('src');
+          }
         }
+
+        audioEl.load();
 
         await new Promise((resolve, reject) => {
           const onLoaded = () => { cleanup(); resolve(); };

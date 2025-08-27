@@ -20,7 +20,7 @@ export default function LocalPlayer() {
 
   const onPick = (e) => {
     const next = Array.from(e.target.files || [])
-      .filter(f => f.type === "audio/mpeg" || f.name.toLowerCase().endsWith(".mp3"))
+      .filter(f => f.type.startsWith("audio/") || f.name.toLowerCase().endsWith(".mp3"))
       .map(f => ({ name: f.name.replace(/\.[^/.]+$/, ""), url: URL.createObjectURL(f) }));
     setTracks(next);
     setI(0);

@@ -2,6 +2,7 @@ import asyncio
 import logging
 import os
 import random
+import sys
 import uuid
 from datetime import datetime
 from pathlib import Path
@@ -10,14 +11,18 @@ from typing import List
 import imageio_ffmpeg
 import yt_dlp
 from dotenv import load_dotenv
-from fastapi import APIRouter, FastAPI, HTTPException
+from fastapi import APIRouter, BackgroundTasks, FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse
 from motor.motor_asyncio import AsyncIOMotorClient
 from pydantic import BaseModel, Field
 
 ROOT_DIR = Path(__file__).parent
+sys.path.append(str(ROOT_DIR.parent))
 load_dotenv(ROOT_DIR / ".env")
+
+from app import audio_pipeline  # noqa: E402
+from app.db import create_audio_job, get_audio_job  # noqa: E402
 
 mongo_url = os.environ["MONGO_URL"]
 client = AsyncIOMotorClient(mongo_url)
@@ -72,6 +77,10 @@ class StatusCheckCreate(BaseModel):
 
 
 class VideoDownloadRequest(BaseModel):
+    url: str
+
+
+class SubmitRequest(BaseModel):
     url: str
 
 
@@ -205,6 +214,36 @@ async def video_download(input: VideoDownloadRequest):
     return FileResponse(
         file_path, filename=filename, media_type="application/octet-stream"
     )
+
+
+@api_router.post("/audio/submit")
+async def submit_audio(req: SubmitRequest, background_tasks: BackgroundTasks):
+    audio_id = create_audio_job(req.url)
+    background_tasks.add_task(audio_pipeline.process_audio_job, None, audio_id)
+    return {"audio_id": audio_id, "status": "queued"}
+
+
+@api_router.get("/audio/status/{audio_id}")
+async def audio_status(audio_id: str):
+    job = get_audio_job(audio_id)
+    if not job:
+        raise HTTPException(status_code=404, detail="Audio job not found")
+    return {
+        "status": job["status"],
+        "progress": job["progress"],
+        "message": job["message"],
+        "title": job["title"],
+        "duration_s": job["duration_s"],
+        "filepath_mp3": job["filepath_mp3"],
+    }
+
+
+@api_router.get("/audio/download/{audio_id}")
+async def audio_download(audio_id: str):
+    job = get_audio_job(audio_id)
+    if not job or not job.get("filepath_mp3"):
+        raise HTTPException(status_code=404, detail="File not ready")
+    return FileResponse(job["filepath_mp3"], media_type="audio/mpeg")
 
 
 app.include_router(api_router)

@@ -13,7 +13,7 @@ const VideoDownloader = () => {
     setError("");
     try {
       const res = await axios.post(
-        "/api/video/download",
+        "/api/youtube/download",
         { url },
         { responseType: "blob" },
       );

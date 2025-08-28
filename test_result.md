@@ -114,11 +114,14 @@ backend:
       - working: true
         agent: "main"
         comment: "Implemented submit, status and download endpoints."
+      - working: true
+        agent: "main"
+        comment: "Allow job submission without Mongo env vars; added regression test."
 frontend: []
 metadata:
   created_by: "main_agent"
   version: "1.0"
-  test_sequence: 1
+  test_sequence: 2
   run_ui: false
 test_plan:
   current_focus:
@@ -128,4 +131,4 @@ test_plan:
   test_priority: "high_first"
 agent_communication:
   - agent: "main"
-    message: "Implemented backend endpoints and ran tests."
+    message: "Allow audio job submission without Mongo env vars and added tests."

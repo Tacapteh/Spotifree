@@ -220,7 +220,7 @@ async def video_download(input: VideoDownloadRequest):
         )
     filename = f"{info.get('title', 'video')}.mp3"
     return FileResponse(
-        file_path, filename=filename, media_type="application/octet-stream"
+        file_path, filename=filename, media_type="audio/mpeg"
     )
 
 

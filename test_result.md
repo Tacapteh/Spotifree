@@ -117,18 +117,32 @@ backend:
       - working: true
         agent: "main"
         comment: "Allow job submission without Mongo env vars; added regression test."
+  - task: "Serve MP3 with correct media type"
+    implemented: true
+    working: true
+    file: "backend/server.py"
+    stuck_count: 0
+    priority: "medium"
+    needs_retesting: false
+    status_history:
+      - working: true
+        agent: "main"
+        comment: "Return mp3 as audio/mpeg and add regression test."
 frontend: []
 metadata:
   created_by: "main_agent"
   version: "1.0"
-  test_sequence: 2
+  test_sequence: 3
   run_ui: false
 test_plan:
   current_focus:
     - "Add audio job endpoints"
+    - "Serve MP3 with correct media type"
   stuck_tasks: []
   test_all: false
   test_priority: "high_first"
 agent_communication:
   - agent: "main"
     message: "Allow audio job submission without Mongo env vars and added tests."
+  - agent: "main"
+    message: "Ensure MP3 downloads use audio/mpeg content type and added regression test."

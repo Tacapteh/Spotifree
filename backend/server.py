@@ -128,6 +128,8 @@ async def video_download(input: VideoDownloadRequest):
         "youtube_include_dash_manifest": False,
         "noplaylist": True,
         "ffmpeg_location": str(Path(FFMPEG_BINARY).parent),
+        # Disable environment proxies by default to avoid corporate proxy blocks
+        "proxy": os.getenv("YT_DLP_PROXY", ""),
     }
     max_attempts = 2
     info = None
@@ -173,6 +175,15 @@ async def video_download(input: VideoDownloadRequest):
             detail = "Cette vidéo est privée..."
         elif "copyright" in error_msg.lower():
             detail = "Cette vidéo est protégée par des droits d'auteur..."
+        elif (
+            "network is unreachable" in error_msg.lower()
+            or "failed to establish a new connection" in error_msg.lower()
+            or "proxy" in error_msg.lower()
+        ):
+            detail = (
+                "Impossible de se connecter à YouTube. Vérifiez la connexion"
+                " réseau ou la configuration du proxy."
+            )
         else:
             detail = "Échec du téléchargement"
         raise HTTPException(status_code=400, detail=detail) from last_error

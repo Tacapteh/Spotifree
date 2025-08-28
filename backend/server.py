@@ -24,9 +24,16 @@ load_dotenv(ROOT_DIR / ".env")
 from app import audio_pipeline  # noqa: E402
 from app.db import create_audio_job, get_audio_job  # noqa: E402
 
-mongo_url = os.environ["MONGO_URL"]
+# Allow the server to start even if MongoDB environment variables are missing.
+# This ensures features like the audio job endpoints work without requiring a
+# running Mongo instance. If the variables are not provided, sensible defaults
+# pointing to a local MongoDB are used. This mirrors FastAPI's
+# typical behaviour of lazy connections; the client will only
+# raise connection errors when a Mongo-dependent endpoint is called.
+mongo_url = os.getenv("MONGO_URL", "mongodb://localhost:27017")
+db_name = os.getenv("DB_NAME", "spotifree")
 client = AsyncIOMotorClient(mongo_url)
-db = client[os.environ["DB_NAME"]]
+db = client[db_name]
 
 DOWNLOAD_DIR = Path(os.getenv("DOWNLOAD_DIR", "/tmp/music_downloads"))
 DOWNLOAD_DIR.mkdir(parents=True, exist_ok=True)

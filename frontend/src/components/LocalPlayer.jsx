@@ -13,15 +13,21 @@ export default function LocalPlayer() {
   const [cur, setCur] = useState(0);
   const [vol, setVol] = useState([70]); // 0..100 for Slider component
 
-  // Cleanup blob URLs on change/unmount
+  // Cleanup blob URLs when the component unmounts
   useEffect(() => {
-    return () => tracks.forEach(t => URL.revokeObjectURL(t.url));
-  }, [tracks]);
+    return () => {
+      tracks.forEach(t => URL.revokeObjectURL(t.url));
+    };
+  }, []);
 
   const onPick = (e) => {
+    // Revoke any previously created object URLs before loading new files
+    tracks.forEach(t => URL.revokeObjectURL(t.url));
+
     const next = Array.from(e.target.files || [])
       .filter(f => f.type.startsWith("audio/") || f.name.toLowerCase().endsWith(".mp3"))
       .map(f => ({ name: f.name.replace(/\.[^/.]+$/, ""), url: URL.createObjectURL(f) }));
+
     setTracks(next);
     setI(0);
     setPlaying(false);

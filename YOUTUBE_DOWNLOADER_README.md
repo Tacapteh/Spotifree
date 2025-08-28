@@ -72,6 +72,8 @@ Les endpoints suivants sont disponibles :
 
 ### Variables d'environnement :
 - `YT_DLP_PROXY` : URL du proxy HTTP à utiliser par `yt-dlp` (optionnel)
+- `REACT_APP_API_URL` : URL de base du backend pour le frontend.
+  - Par défaut, l'application tente d'appeler `http://<hôte>:10000`.
 
 ## 🛡️ Sécurité et limitations
 

@@ -4,6 +4,13 @@ import { Input } from "./ui/input";
 import { Button } from "./ui/button";
 import { Progress } from "./ui/progress";
 
+// Create an axios instance with a configurable base URL so that the
+// frontend can communicate with a backend hosted on a different origin.
+// Defaults to the local development server.
+const api = axios.create({
+  baseURL: process.env.REACT_APP_API_URL || "http://localhost:8000",
+});
+
 const VideoDownloader = () => {
   const [url, setUrl] = useState("");
   const [error, setError] = useState("");
@@ -14,7 +21,7 @@ const VideoDownloader = () => {
 
   const downloadFile = async (id) => {
     try {
-      const res = await axios.get(`/api/audio/download/${id}`, {
+      const res = await api.get(`/api/audio/download/${id}`, {
         responseType: "blob",
       });
       const blobUrl = window.URL.createObjectURL(res.data);
@@ -34,7 +41,7 @@ const VideoDownloader = () => {
     setLoading(true);
     setError("");
     try {
-      const res = await axios.post("/api/audio/submit", { url });
+      const res = await api.post("/api/audio/submit", { url });
       setAudioId(res.data.audio_id);
       setStatus(res.data.status);
       setProgress(0);
@@ -50,7 +57,7 @@ const VideoDownloader = () => {
     if (status === "done" || status === "error") return;
     const id = setInterval(async () => {
       try {
-        const res = await axios.get(`/api/audio/status/${audioId}`);
+        const res = await api.get(`/api/audio/status/${audioId}`);
         setStatus(res.data.status);
         setProgress(res.data.progress || 0);
         if (res.data.status === "error") {

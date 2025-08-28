@@ -6,9 +6,10 @@ import { Progress } from "./ui/progress";
 
 // Create an axios instance with a configurable base URL so that the
 // frontend can communicate with a backend hosted on a different origin.
-// Defaults to the local development server.
+// Defaults to the same host using the backend's expected port (10000).
+const defaultApiUrl = `${window.location.protocol}//${window.location.hostname}:10000`;
 const api = axios.create({
-  baseURL: process.env.REACT_APP_API_URL || "http://localhost:8000",
+  baseURL: process.env.REACT_APP_API_URL || defaultApiUrl,
 });
 
 const VideoDownloader = () => {
@@ -46,7 +47,8 @@ const VideoDownloader = () => {
       setStatus(res.data.status);
       setProgress(0);
     } catch (e) {
-      setError("Création du job échouée");
+      const msg = e.response?.data?.detail || e.message || "Création du job échouée";
+      setError(msg);
     } finally {
       setLoading(false);
     }

@@ -1,60 +1,71 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import axios from "axios";
 import { Input } from "./ui/input";
 import { Button } from "./ui/button";
+import { Progress } from "./ui/progress";
 
 const VideoDownloader = () => {
   const [url, setUrl] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+  const [audioId, setAudioId] = useState(null);
+  const [status, setStatus] = useState("");
+  const [progress, setProgress] = useState(0);
 
-  const handleDownload = async () => {
-    setLoading(true);
-    setError("");
+  const downloadFile = async (id) => {
     try {
-      const res = await axios.post(
-        "/api/youtube/download",
-        { url },
-        { responseType: "blob" },
-      );
+      const res = await axios.get(`/api/audio/download/${id}`, {
+        responseType: "blob",
+      });
       const blobUrl = window.URL.createObjectURL(res.data);
       const a = document.createElement("a");
-      const disposition = res.headers["content-disposition"];
-      let filename = "audio.mp3";
-      if (disposition) {
-        const match = disposition.match(/filename="?([^";]+)"?/);
-        if (match) filename = match[1];
-      }
       a.href = blobUrl;
-      a.download = filename;
+      a.download = `${id}.mp3`;
       document.body.appendChild(a);
       a.click();
       a.remove();
       window.URL.revokeObjectURL(blobUrl);
     } catch (e) {
-      let errorMessage = "Téléchargement échoué";
-      const resp = e.response;
-      if (resp?.data) {
-        try {
-          const text = await resp.data.text();
-          const parsed = JSON.parse(text);
-          if (parsed.detail) errorMessage = parsed.detail;
-        } catch (_err) {
-          // ignore JSON parse errors, fall back to status-based messages
-        }
-      }
-      if (errorMessage === "Téléchargement échoué") {
-        if (resp?.status === 403) {
-          errorMessage = "La plateforme a bloqué cette requête. Essayez plus tard.";
-        } else if (resp?.status === 429) {
-          errorMessage = "Trop de requêtes. Attendez quelques minutes.";
-        }
-      }
-      setError(errorMessage);
+      setError("Téléchargement échoué");
+    }
+  };
+
+  const handleDownload = async () => {
+    setLoading(true);
+    setError("");
+    try {
+      const res = await axios.post("/api/audio/submit", { url });
+      setAudioId(res.data.audio_id);
+      setStatus(res.data.status);
+      setProgress(0);
+    } catch (e) {
+      setError("Création du job échouée");
     } finally {
       setLoading(false);
     }
   };
+
+  useEffect(() => {
+    if (!audioId) return;
+    if (status === "done" || status === "error") return;
+    const id = setInterval(async () => {
+      try {
+        const res = await axios.get(`/api/audio/status/${audioId}`);
+        setStatus(res.data.status);
+        setProgress(res.data.progress || 0);
+        if (res.data.status === "error") {
+          setError(res.data.message || "Erreur lors du traitement");
+        }
+        if (res.data.status === "done") {
+          downloadFile(audioId);
+        }
+      } catch (_e) {
+        setError("Impossible de récupérer le statut");
+        clearInterval(id);
+      }
+    }, 1000);
+    return () => clearInterval(id);
+  }, [audioId, status]);
 
   return (
     <div className="p-8 max-w-xl mx-auto space-y-4">
@@ -70,6 +81,12 @@ const VideoDownloader = () => {
           {loading ? "Téléchargement..." : "Télécharger en MP3"}
         </Button>
       </div>
+      {audioId && (
+        <div className="space-y-2">
+          <Progress value={progress} />
+          <p className="text-xs text-white/70">{progress}%</p>
+        </div>
+      )}
       <div className="p-4 bg-blue-900/20 border border-blue-500/20 rounded-lg">
         <p className="font-medium text-blue-400 mb-2">
           💡 Conseils pour un téléchargement réussi :

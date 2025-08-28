@@ -109,6 +109,9 @@ async def video_download(input: VideoDownloadRequest):
         "Accept-Charset": "ISO-8859-1,utf-8;q=0.7,*;q=0.7",
         "Keep-Alive": "300",
         "Connection": "keep-alive",
+        "X-YouTube-Client-Name": "1",
+        "X-YouTube-Client-Version": "2.20240101.00.00",
+        "Referer": "https://www.youtube.com/",
     }
     base_opts = {
         "outtmpl": str(DOWNLOAD_DIR / "%(id)s.%(ext)s"),
@@ -116,12 +119,15 @@ async def video_download(input: VideoDownloadRequest):
         "no_warnings": True,
         "http_headers": headers,
         "geo_bypass": True,
+        "geo_bypass_country": "US",
         "age_limit": None,
         "no_check_certificate": True,
         "skip_unavailable_fragments": True,
         "keep_fragments": False,
         "abort_on_unavailable_fragment": False,
-        "ffmpeg_location": FFMPEG_BINARY,
+        "youtube_include_dash_manifest": False,
+        "noplaylist": True,
+        "ffmpeg_location": str(Path(FFMPEG_BINARY).parent),
     }
     max_attempts = 2
     info = None

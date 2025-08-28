@@ -94,7 +94,7 @@ async def get_status_checks():
     return [StatusCheck(**s) for s in status_checks]
 
 
-@api_router.post("/video/download")
+@api_router.post("/youtube/download")
 async def video_download(input: VideoDownloadRequest):
     headers = {
         "User-Agent": (

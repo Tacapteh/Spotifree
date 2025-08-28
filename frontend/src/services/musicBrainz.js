@@ -2,7 +2,10 @@
 const MUSICBRAINZ_API = 'https://musicbrainz.org/ws/2';
 const COVERART_API = 'https://coverartarchive.org';
 const LASTFM_API = 'https://ws.audioscrobbler.com/2.0';
-const LASTFM_API_KEY = '7ac0e7a8d3e3bb2cde00c2b0d8e63b9f'; // Public key for testing
+// Last.fm API key is now provided via environment variable to avoid hard-coding
+// sensitive or rate-limited credentials. Users should define
+// REACT_APP_LASTFM_API_KEY in their environment when running the frontend.
+const LASTFM_API_KEY = process.env.REACT_APP_LASTFM_API_KEY;
 
 // Cache for artist data to avoid repeated requests
 const artistCache = new Map();
@@ -74,6 +77,12 @@ export const getArtistImage = async (artistName) => {
   const cacheKey = artistName.toLowerCase().trim();
   if (imageCache.has(cacheKey)) {
     return imageCache.get(cacheKey);
+  }
+
+  // Do not attempt the Last.fm request if no API key is configured
+  if (!LASTFM_API_KEY) {
+    console.warn('Last.fm API key not configured');
+    return null;
   }
 
   try {

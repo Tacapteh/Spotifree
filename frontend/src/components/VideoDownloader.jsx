@@ -1,16 +1,8 @@
+import { api } from "../lib/api";
 import React, { useEffect, useState } from "react";
-import axios from "axios";
 import { Input } from "./ui/input";
 import { Button } from "./ui/button";
 import { Progress } from "./ui/progress";
-
-// Create an axios instance with a configurable base URL so that the
-// frontend can communicate with a backend hosted on a different origin.
-// Defaults to the same host using the backend's expected port (10000).
-const defaultApiUrl = `${window.location.protocol}//${window.location.hostname}:10000`;
-const api = axios.create({
-  baseURL: process.env.REACT_APP_API_URL || defaultApiUrl,
-});
 
 const VideoDownloader = () => {
   const [url, setUrl] = useState("");
@@ -19,6 +11,10 @@ const VideoDownloader = () => {
   const [audioId, setAudioId] = useState(null);
   const [status, setStatus] = useState("");
   const [progress, setProgress] = useState(0);
+
+  useEffect(() => {
+    api.get("/health").catch(() => {});
+  }, []);
 
   const downloadFile = async (id) => {
     try {

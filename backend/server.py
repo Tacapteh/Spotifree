@@ -128,9 +128,10 @@ async def video_download(input: VideoDownloadRequest):
         "youtube_include_dash_manifest": False,
         "noplaylist": True,
         "ffmpeg_location": str(Path(FFMPEG_BINARY).parent),
-        # Disable environment proxies by default to avoid corporate proxy blocks
-        "proxy": os.getenv("YT_DLP_PROXY", ""),
     }
+    yt_dlp_proxy = os.getenv("YT_DLP_PROXY")
+    if yt_dlp_proxy:
+        base_opts["proxy"] = yt_dlp_proxy
     max_attempts = 2
     info = None
     last_error = None

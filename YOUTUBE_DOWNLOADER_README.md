@@ -70,6 +70,9 @@ Les endpoints suivants sont disponibles :
 - Fichiers audio : `/tmp/music_downloads/`
 - Métadonnées : Base de données MongoDB
 
+### Variables d'environnement :
+- `YT_DLP_PROXY` : URL du proxy HTTP à utiliser par `yt-dlp` (optionnel)
+
 ## 🛡️ Sécurité et limitations
 
 1. **Validation d'URL** : Seules les URLs YouTube valides sont acceptées

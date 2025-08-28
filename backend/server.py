@@ -40,7 +40,9 @@ DOWNLOAD_DIR.mkdir(parents=True, exist_ok=True)
 
 FFMPEG_BINARY = imageio_ffmpeg.get_ffmpeg_exe()
 
+from fastapi.middleware.cors import CORSMiddleware
 app = FastAPI()
+app.add_middleware(CORSMiddleware, allow_origins=[""], allow_credentials=True, allow_methods=[""], allow_headers=["*"])
 
 ALLOWED_ORIGINS = [
     o for o in [os.getenv("FRONTEND_ORIGIN"), "http://localhost:3000"] if o

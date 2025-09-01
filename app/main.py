@@ -28,7 +28,7 @@ class SubmitRequest(BaseModel):
 @app.post("/audio/submit")
 def submit_audio(req: SubmitRequest, background_tasks: BackgroundTasks):
     audio_id = create_audio_job(req.url)
-    background_tasks.add_task(audio_pipeline.process_audio_job, None, audio_id)
+    background_tasks.add_task(audio_pipeline.process_audio_job, audio_id)
     return {"audio_id": audio_id, "status": "queued"}
 
 

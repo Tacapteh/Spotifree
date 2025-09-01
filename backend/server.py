@@ -1,5 +1,4 @@
 from fastapi import FastAPI, APIRouter, BackgroundTasks, HTTPException
-from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse
 from pydantic import BaseModel
 
@@ -7,6 +6,8 @@ from app import audio_pipeline
 from app.db import create_audio_job, get_audio_job
 
 app = FastAPI()
+
+from fastapi.middleware.cors import CORSMiddleware
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -23,13 +24,15 @@ class SubmitRequest(BaseModel):
 
 
 @api_router.post("/audio/submit")
+@api_router.post("/audio/submit/")
 async def submit_audio(req: SubmitRequest, background_tasks: BackgroundTasks):
     audio_id = create_audio_job(req.url)
-    background_tasks.add_task(audio_pipeline.process_audio_job, None, audio_id)
+    background_tasks.add_task(audio_pipeline.process_audio_job, audio_id)
     return {"audio_id": audio_id, "status": "queued"}
 
 
 @api_router.get("/audio/status/{audio_id}")
+@api_router.get("/audio/status/{audio_id}/")
 async def audio_status(audio_id: str):
     job = get_audio_job(audio_id)
     if not job:
@@ -45,6 +48,7 @@ async def audio_status(audio_id: str):
 
 
 @api_router.get("/audio/download/{audio_id}")
+@api_router.get("/audio/download/{audio_id}/")
 async def audio_download(audio_id: str):
     job = get_audio_job(audio_id)
     if not job or not job.get("filepath_mp3"):

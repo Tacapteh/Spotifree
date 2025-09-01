@@ -25,12 +25,11 @@ from .db import AUDIO_DIR, get_audio_job, update_audio_job
 
 # INSERT START: pipeline
 
-def process_audio_job(db_module, audio_id: str) -> None:
+def process_audio_job(audio_id: str) -> None:
     """Download the audio for ``audio_id`` and convert it to MP3.
 
     Parameters
     ----------
-    db_module: ignored legacy parameter kept for backward compatibility.
     audio_id: Identifier of the audio job in the database.
     """
 

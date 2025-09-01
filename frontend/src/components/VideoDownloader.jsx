@@ -43,8 +43,7 @@ const VideoDownloader = () => {
       setStatus(res.data.status);
       setProgress(0);
     } catch (e) {
-      const msg = e.response?.data?.detail || e.message || "Création du job échouée";
-      setError(msg);
+      setError(`Échec (${e.response?.status || "?"})`);
     } finally {
       setLoading(false);
     }
@@ -64,8 +63,8 @@ const VideoDownloader = () => {
         if (res.data.status === "done") {
           downloadFile(audioId);
         }
-      } catch (_e) {
-        setError("Impossible de récupérer le statut");
+      } catch (e) {
+        setError(`Impossible de récupérer le statut (${e.response?.status || "?"})`);
         clearInterval(id);
       }
     }, 1000);

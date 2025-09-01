@@ -13,7 +13,7 @@ const VideoDownloader = () => {
   const [progress, setProgress] = useState(0);
 
   useEffect(() => {
-    api.get("/health").catch(() => {});
+    api.get("/api/health").catch(() => {});
   }, []);
 
   const downloadFile = async (id) => {
@@ -21,7 +21,7 @@ const VideoDownloader = () => {
       const res = await api.get(`/api/audio/download/${id}`, {
         responseType: "blob",
       });
-      const blobUrl = window.URL.createObjectURL(res.data);
+      const blobUrl = window.URL.createObjectURL(new Blob([res.data]));
       const a = document.createElement("a");
       a.href = blobUrl;
       a.download = `${id}.mp3`;
@@ -30,7 +30,7 @@ const VideoDownloader = () => {
       a.remove();
       window.URL.revokeObjectURL(blobUrl);
     } catch (e) {
-      setError("Téléchargement échoué");
+      setError(`Téléchargement échoué (${e.response?.status || "?"})`);
     }
   };
 

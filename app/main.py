@@ -4,11 +4,19 @@ from fastapi.responses import FileResponse
 from pydantic import BaseModel
 
 from . import audio_pipeline
-from .db import AUDIO_DIR, create_audio_job, get_audio_job
+from .db import create_audio_job, get_audio_job
 # INSERT END: imports
 
 # INSERT START: app
 app = FastAPI()
+from fastapi.middleware.cors import CORSMiddleware
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 # INSERT END: app
 
 # INSERT START: models
@@ -47,4 +55,9 @@ def audio_download(audio_id: str):
     return FileResponse(job["filepath_mp3"], media_type="audio/mpeg")
 
 # INSERT END: endpoints
+
+
+@app.get("/health")
+def health():
+    return {"ok": True}
 

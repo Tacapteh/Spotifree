@@ -5,15 +5,28 @@ from pydantic import BaseModel
 from app import audio_pipeline
 from app.db import create_audio_job, get_audio_job
 
+import os
+from fastapi.middleware.cors import CORSMiddleware
+
 app = FastAPI()
 
-from fastapi.middleware.cors import CORSMiddleware
+cors_origins_env = os.getenv("CORS_ORIGINS")
+allow_origins = (
+    [o.strip() for o in cors_origins_env.split(",") if o.strip()]
+    if cors_origins_env
+    else []
+)
+allow_origin_regex = os.getenv(
+    "CORS_ORIGIN_REGEX", r"^https://.*\.vercel\.app$"
+)
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
-    allow_credentials=True,
-    allow_methods=["*"],
+    allow_origins=allow_origins,
+    allow_origin_regex=allow_origin_regex,
+    allow_methods=["GET", "POST", "OPTIONS"],
     allow_headers=["*"],
+    expose_headers=["Content-Disposition"],
+    allow_credentials=False,
 )
 
 api_router = APIRouter(prefix="/api")

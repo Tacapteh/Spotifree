@@ -188,7 +188,9 @@ metadata:
   test_sequence: 5
   run_ui: false
 test_plan:
-  current_focus: []
+  current_focus:
+    - "YouTube downloader navigation and UI"
+    - "YouTube download flow and error handling"
   stuck_tasks: []
   test_all: false
   test_priority: "high_first"

@@ -25,7 +25,7 @@ const VideoDownloader = () => {
     if (!downloadReady || !jobId) {
       return "";
     }
-    return `${apiBase}/api/download/${jobId}`;
+    return `${apiBase}/api/audio/download/${jobId}`;
   }, [downloadReady, jobId]);
 
   useEffect(() => {
@@ -40,9 +40,9 @@ const VideoDownloader = () => {
     setStatus("");
     setProgress(0);
     try {
-      const res = await apiClient.post("/api/jobs", { url, bitrate: 320 });
-      setJobId(res.data.job_id);
-      setStatus("queued");
+      const res = await apiClient.post("/api/audio/submit", { url });
+      setJobId(res.data.audio_id);
+      setStatus(res.data.status || "queued");
       setProgress(0);
     } catch (e) {
       setError(`Échec (${e.response?.status || "?"})`);
@@ -55,15 +55,16 @@ const VideoDownloader = () => {
     if (!jobId) return;
     const id = setInterval(async () => {
       try {
-        const res = await apiClient.get(`/api/jobs/${jobId}`);
-        setStatus(res.data.status);
-        setProgress(res.data.progress || 0);
-        if (res.data.status === "error") {
-          setError(res.data.message || "Erreur lors du traitement");
+        const res = await apiClient.get(`/api/audio/status/${jobId}`);
+        const job = res.data;
+        setStatus(job.status);
+        setProgress(job.progress || 0);
+        if (job.status === "error") {
+          setError(job.message || "Erreur lors du traitement");
           clearInterval(id);
         }
-        if (res.data.status === "done") {
-          setProgress(res.data.progress || 100);
+        if (job.status === "done") {
+          setProgress(job.progress || 100);
           setDownloadReady(true);
           clearInterval(id);
         }

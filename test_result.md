@@ -197,7 +197,9 @@ test_plan:
   current_focus:
     - "YouTube downloader navigation and UI"
     - "YouTube download flow and error handling"
-  stuck_tasks: []
+  stuck_tasks:
+    - "YouTube downloader navigation and UI"
+    - "YouTube download flow and error handling"
   test_all: false
   test_priority: "high_first"
 agent_communication:

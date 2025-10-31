@@ -1,19 +1,29 @@
-// Support both Vite (`import.meta.env`) and CRA (`process.env.REACT_APP_*`) builds
-const getEnvValue = () => {
-  // CRA exposes custom env variables through process.env
-  if (typeof process !== "undefined" && process.env?.REACT_APP_API_BASE) {
-    return process.env.REACT_APP_API_BASE;
+export const API_BASE = (typeof import.meta !== "undefined" && import.meta.env?.VITE_API_BASE) || "https://TON-BACKEND.onrender.com";
+
+const API_ROOT = API_BASE.replace(/\/+$/, "");
+
+export async function createJob(payload) {
+  const response = await fetch(`${API_ROOT}/api/jobs`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(payload),
+  });
+
+  if (!response.ok) {
+    const error = await response.json().catch(() => ({}));
+    throw Object.assign(new Error("Échec de la création du job"), { response, error });
   }
 
-  // Vite exposes variables on import.meta.env, but accessing import.meta directly
-  // can throw in environments where it isn't defined (like CRA), so guard it.
-  try {
-    return import.meta?.env?.VITE_API_BASE;
-  } catch (_error) {
-    return undefined;
+  return response.json();
+}
+
+export async function getJob(jobId) {
+  const response = await fetch(`${API_ROOT}/api/jobs/${jobId}`);
+  if (!response.ok) {
+    const error = await response.json().catch(() => ({}));
+    throw Object.assign(new Error("Échec de la récupération du job"), { response, error });
   }
-};
-
-const API_BASE = getEnvValue() || "https://TON-BACKEND-RENDER.onrender.com";
-
-export { API_BASE };
+  return response.json();
+}

@@ -1,46 +1,48 @@
-import { api } from "../lib/api";
-import React, { useEffect, useState } from "react";
+import axios from "axios";
+import React, { useEffect, useMemo, useState } from "react";
+import { API_BASE } from "../api";
 import { Input } from "./ui/input";
 import { Button } from "./ui/button";
 import { Progress } from "./ui/progress";
+
+const apiBase = API_BASE.replace(/\/+$/, "");
+
+const apiClient = axios.create({
+  baseURL: apiBase,
+  timeout: 30000,
+});
 
 const VideoDownloader = () => {
   const [url, setUrl] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
-  const [audioId, setAudioId] = useState(null);
+  const [jobId, setJobId] = useState(null);
   const [status, setStatus] = useState("");
   const [progress, setProgress] = useState(0);
+  const [downloadReady, setDownloadReady] = useState(false);
+
+  const downloadHref = useMemo(() => {
+    if (!downloadReady || !jobId) {
+      return "";
+    }
+    return `${apiBase}/api/download/${jobId}`;
+  }, [downloadReady, jobId]);
 
   useEffect(() => {
-    api.get("/api/health").catch(() => {});
+    apiClient.get("/api/health").catch(() => {});
   }, []);
-
-  const downloadFile = async (id) => {
-    try {
-      const res = await api.get(`/api/audio/download/${id}`, {
-        responseType: "blob",
-      });
-      const blobUrl = window.URL.createObjectURL(new Blob([res.data]));
-      const a = document.createElement("a");
-      a.href = blobUrl;
-      a.download = `${id}.mp3`;
-      document.body.appendChild(a);
-      a.click();
-      a.remove();
-      window.URL.revokeObjectURL(blobUrl);
-    } catch (e) {
-      setError(`Téléchargement échoué (${e.response?.status || "?"})`);
-    }
-  };
 
   const handleDownload = async () => {
     setLoading(true);
     setError("");
+    setDownloadReady(false);
+    setJobId(null);
+    setStatus("");
+    setProgress(0);
     try {
-      const res = await api.post("/api/audio/submit", { url });
-      setAudioId(res.data.audio_id);
-      setStatus(res.data.status);
+      const res = await apiClient.post("/api/jobs", { url, bitrate: 320 });
+      setJobId(res.data.job_id);
+      setStatus("queued");
       setProgress(0);
     } catch (e) {
       setError(`Échec (${e.response?.status || "?"})`);
@@ -50,18 +52,20 @@ const VideoDownloader = () => {
   };
 
   useEffect(() => {
-    if (!audioId) return;
-    if (status === "done" || status === "error") return;
+    if (!jobId) return;
     const id = setInterval(async () => {
       try {
-        const res = await api.get(`/api/audio/status/${audioId}`);
+        const res = await apiClient.get(`/api/jobs/${jobId}`);
         setStatus(res.data.status);
         setProgress(res.data.progress || 0);
         if (res.data.status === "error") {
           setError(res.data.message || "Erreur lors du traitement");
+          clearInterval(id);
         }
         if (res.data.status === "done") {
-          downloadFile(audioId);
+          setProgress(res.data.progress || 100);
+          setDownloadReady(true);
+          clearInterval(id);
         }
       } catch (e) {
         setError(`Impossible de récupérer le statut (${e.response?.status || "?"})`);
@@ -69,7 +73,7 @@ const VideoDownloader = () => {
       }
     }, 1000);
     return () => clearInterval(id);
-  }, [audioId, status]);
+  }, [jobId]);
 
   return (
     <div className="p-8 max-w-xl mx-auto space-y-4">
@@ -85,11 +89,16 @@ const VideoDownloader = () => {
           {loading ? "Téléchargement..." : "Télécharger en MP3"}
         </Button>
       </div>
-      {audioId && (
+      {jobId && (
         <div className="space-y-2">
           <Progress value={progress} />
           <p className="text-xs text-white/70">{progress}%</p>
         </div>
+      )}
+      {downloadReady && downloadHref && (
+        <a href={downloadHref} rel="noopener" className="btn">
+          Télécharger le MP3
+        </a>
       )}
       <div className="p-4 bg-blue-900/20 border border-blue-500/20 rounded-lg">
         <p className="font-medium text-blue-400 mb-2">

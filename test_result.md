@@ -175,3 +175,5 @@ agent_communication:
     message: "User requests verification of all features, especially yt-dlp and MP3 conversion. Starting comprehensive backend testing with real YouTube URL."
   - agent: "testing"
     message: "✅ COMPREHENSIVE TESTING COMPLETED: All backend functionality verified working correctly. yt-dlp downloads YouTube videos successfully, ffmpeg converts to high-quality MP3, all API endpoints functional, proper error handling implemented. Fixed minor import path issue in server.py. System ready for production use."
+  - agent: "main"
+    message: "User reported 'Échec (?)' error in frontend. Root cause: Frontend could not communicate with backend due to missing proxy configuration. Fixed by: 1) Removed hardcoded external URLs from .env 2) Added proxy to package.json pointing to localhost:8001 3) Backend now accessible from frontend via relative URLs. Ready for frontend testing."

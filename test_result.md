@@ -177,3 +177,5 @@ agent_communication:
     message: "✅ COMPREHENSIVE TESTING COMPLETED: All backend functionality verified working correctly. yt-dlp downloads YouTube videos successfully, ffmpeg converts to high-quality MP3, all API endpoints functional, proper error handling implemented. Fixed minor import path issue in server.py. System ready for production use."
   - agent: "main"
     message: "User reported 'Échec (?)' error in frontend. Root cause: Frontend could not communicate with backend due to missing proxy configuration. Fixed by: 1) Removed hardcoded external URLs from .env 2) Added proxy to package.json pointing to localhost:8001 3) Backend now accessible from frontend via relative URLs. Ready for frontend testing."
+  - agent: "main"
+    message: "User reported 'Échec 405' error. Root cause: Axios sends HEAD request to check file availability before download, but endpoint only supported GET. Fixed by adding @api_router.head() decorators to /audio/download endpoint. Also created standalone yt2mp3.py script with full features (320kbps, metadata, progress bar, multi-platform support)."

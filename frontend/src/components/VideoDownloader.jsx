@@ -77,16 +77,22 @@ const VideoDownloader = () => {
   }, [jobId]);
 
   return (
-    <div className="p-8 max-w-xl mx-auto space-y-4">
-      <h1 className="text-2xl font-bold">Convertisseur Vidéo en MP3</h1>
-      <div className="flex gap-2">
+    <div className="w-full px-4 py-6 sm:p-8 max-w-xl mx-auto space-y-4">
+      <h1 className="text-xl sm:text-2xl font-bold text-center sm:text-left">
+        Convertisseur Vidéo en MP3
+      </h1>
+      <div className="flex flex-col sm:flex-row gap-2 sm:items-center">
         <Input
           placeholder="URL de la vidéo (YouTube, Vimeo, etc.)"
           value={url}
           onChange={(e) => setUrl(e.target.value)}
-          className="flex-1"
+          className="w-full sm:flex-1"
         />
-        <Button onClick={handleDownload} disabled={!url || loading}>
+        <Button
+          onClick={handleDownload}
+          disabled={!url || loading}
+          className="w-full sm:w-auto"
+        >
           {loading ? "Téléchargement..." : "Télécharger en MP3"}
         </Button>
       </div>

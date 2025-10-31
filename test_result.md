@@ -101,48 +101,66 @@
 #====================================================================================================
 # Testing Data - Main Agent and testing sub agent both should log testing data below this section
 #====================================================================================================
-user_problem_statement: "Mon app affiche \"Création du job échouée\""
+user_problem_statement: "Vérifier si toutes les features fonctionnent correctement, surtout yt-dlp et la conversion en mp3"
 backend:
-  - task: "Add audio job endpoints"
+  - task: "YouTube download with yt-dlp"
+    implemented: true
+    working: "NA"
+    file: "app/audio_pipeline.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: true
+    status_history:
+      - working: "NA"
+        agent: "main"
+        comment: "Need to verify yt-dlp can download YouTube videos correctly"
+  - task: "MP3 conversion"
+    implemented: true
+    working: "NA"
+    file: "app/audio_pipeline.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: true
+    status_history:
+      - working: "NA"
+        agent: "main"
+        comment: "Need to verify video to MP3 conversion works"
+  - task: "Audio job endpoints (submit/status/download)"
     implemented: true
     working: true
     file: "backend/server.py"
     stuck_count: 0
     priority: "high"
-    needs_retesting: false
+    needs_retesting: true
     status_history:
       - working: true
         agent: "main"
-        comment: "Implemented submit, status and download endpoints."
-      - working: true
-        agent: "main"
-        comment: "Allow job submission without Mongo env vars; added regression test."
+        comment: "Previously tested and working. Re-testing complete flow."
   - task: "Serve MP3 with correct media type"
     implemented: true
     working: true
     file: "backend/server.py"
     stuck_count: 0
     priority: "medium"
-    needs_retesting: false
+    needs_retesting: true
     status_history:
       - working: true
         agent: "main"
-        comment: "Return mp3 as audio/mpeg and add regression test."
+        comment: "Return mp3 as audio/mpeg. Re-testing."
 frontend: []
 metadata:
   created_by: "main_agent"
-  version: "1.0"
-  test_sequence: 3
+  version: "1.1"
+  test_sequence: 4
   run_ui: false
 test_plan:
   current_focus:
-    - "Add audio job endpoints"
-    - "Serve MP3 with correct media type"
+    - "YouTube download with yt-dlp"
+    - "MP3 conversion"
+    - "Audio job endpoints (submit/status/download)"
   stuck_tasks: []
   test_all: false
   test_priority: "high_first"
 agent_communication:
   - agent: "main"
-    message: "Allow audio job submission without Mongo env vars and added tests."
-  - agent: "main"
-    message: "Ensure MP3 downloads use audio/mpeg content type and added regression test."
+    message: "User requests verification of all features, especially yt-dlp and MP3 conversion. Starting comprehensive backend testing with real YouTube URL."

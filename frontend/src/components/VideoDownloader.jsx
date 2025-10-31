@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import { API_BASE, createJob, getJob } from "../api";
 import { Input } from "./ui/input";
 import { Button } from "./ui/button";
@@ -22,6 +22,7 @@ const VideoDownloader = () => {
   const [error, setError] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [jobs, setJobs] = useState([]);
+  const [downloadingJobId, setDownloadingJobId] = useState(null);
   const pollers = useRef({});
 
   useEffect(() => {
@@ -154,6 +155,70 @@ const VideoDownloader = () => {
 
   const downloadHref = (jobId) => `${API_ROOT}/api/download/${jobId}`;
 
+  const sanitizeFilename = useMemo(
+    () =>
+      (name) => {
+        const value = `${name ?? ""}`;
+        return value
+          .normalize("NFKD")
+          .replace(/[\u0300-\u036f]/g, "")
+          .replace(/[^\w\s-]+/g, "")
+          .trim()
+          .replace(/[\s_-]+/g, "-")
+          .replace(/^-+|-+$/g, "");
+      },
+    []
+  );
+
+  const handleDownload = async (job) => {
+    const jobId = job?.job_id || job?.id;
+    if (!jobId) return;
+
+    setDownloadingJobId(jobId);
+    try {
+      updateJob(jobId, { message: "" });
+
+      const response = await fetch(downloadHref(jobId), { mode: "cors" });
+      if (!response.ok) {
+        const error = await response.json().catch(() => ({}));
+        throw new Error(error?.error?.message || "Téléchargement impossible.");
+      }
+
+      const blob = await response.blob();
+      const downloadUrl = URL.createObjectURL(blob);
+      const anchor = document.createElement("a");
+      const disposition = response.headers.get("content-disposition") || "";
+      let fromHeader = "";
+      const utfMatch = disposition.match(/filename\*=UTF-8''([^;]+)/i);
+      if (utfMatch?.[1]) {
+        try {
+          fromHeader = decodeURIComponent(utfMatch[1]);
+        } catch (error) {
+          fromHeader = utfMatch[1];
+        }
+      } else {
+        const quotedMatch = disposition.match(/filename="?([^";]+)"?/i);
+        if (quotedMatch?.[1]) {
+          fromHeader = quotedMatch[1];
+        }
+      }
+      const title = fromHeader || job?.title || job?.url || jobId;
+      const safeTitle = sanitizeFilename(title) || `spotifree-${jobId}`;
+      anchor.href = downloadUrl;
+      anchor.download = `${safeTitle}.mp3`;
+      document.body.appendChild(anchor);
+      anchor.click();
+      anchor.remove();
+      URL.revokeObjectURL(downloadUrl);
+    } catch (downloadError) {
+      updateJob(jobId, {
+        message: downloadError.message || "Échec du téléchargement",
+      });
+    } finally {
+      setDownloadingJobId((current) => (current === jobId ? null : current));
+    }
+  };
+
   return (
     <div className="w-full max-w-2xl mx-auto px-4 py-8 space-y-6">
       <div className="bg-gray-900/60 border border-gray-800 rounded-2xl p-6 shadow-lg space-y-6">
@@ -256,7 +321,7 @@ const VideoDownloader = () => {
             const jobId = job.job_id || job.id;
             const isDone = job.status === "done";
             const isError = job.status === "error";
-            const href = isDone ? downloadHref(jobId) : null;
+            const isDownloading = downloadingJobId === jobId;
 
             return (
               <div
@@ -289,14 +354,15 @@ const VideoDownloader = () => {
                   </div>
                 </div>
 
-                {isDone && href && (
-                  <a
-                    href={href}
-                    rel="noopener"
-                    className="inline-flex items-center justify-center rounded-md border border-green-500/70 bg-green-500/10 px-4 py-2 text-sm font-semibold text-green-300 hover:bg-green-500/20"
+                {isDone && (
+                  <button
+                    type="button"
+                    onClick={() => handleDownload(job)}
+                    disabled={isDownloading}
+                    className="inline-flex items-center justify-center rounded-md border border-green-500/70 bg-green-500/10 px-4 py-2 text-sm font-semibold text-green-300 hover:bg-green-500/20 disabled:opacity-50"
                   >
-                    Télécharger le MP3
-                  </a>
+                    {isDownloading ? "Téléchargement…" : "Télécharger le MP3"}
+                  </button>
                 )}
 
                 {isError && job.message && (

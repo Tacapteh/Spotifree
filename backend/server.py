@@ -66,6 +66,8 @@ async def audio_status(audio_id: str):
 
 @api_router.get("/audio/download/{audio_id}")
 @api_router.get("/audio/download/{audio_id}/")
+@api_router.head("/audio/download/{audio_id}")
+@api_router.head("/audio/download/{audio_id}/")
 async def audio_download(audio_id: str):
     job = get_audio_job(audio_id)
     if not job or not job.get("filepath_mp3"):

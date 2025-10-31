@@ -95,49 +95,56 @@ class SpotifyCloneTest:
         
         try:
             while attempt < max_attempts:
-                response = self.session.get(
-                    f"{API_BASE}/audio/status/{self.audio_id}",
-                    timeout=10
-                )
-                
-                if response.status_code != 200:
-                    print(f"❌ Status check failed with status: {response.status_code}")
-                    return False
-                
-                data = response.json()
-                status = data.get('status')
-                progress = data.get('progress', 0)
-                message = data.get('message', '')
-                title = data.get('title', '')
-                
-                print(f"   Status: {status}, Progress: {progress}%, Title: {title}")
-                
-                if status == 'done':
-                    print("✅ Job completed successfully")
-                    print(f"   Final title: {title}")
-                    print(f"   Duration: {data.get('duration_s')} seconds")
-                    print(f"   MP3 file: {data.get('filepath_mp3')}")
+                try:
+                    response = self.session.get(
+                        f"{API_BASE}/audio/status/{self.audio_id}",
+                        timeout=15
+                    )
                     
-                    # Check if we have all expected data
-                    if title and data.get('filepath_mp3'):
-                        self.test_results['youtube_download'] = True
-                        self.test_results['mp3_conversion'] = True
-                        return True
+                    if response.status_code != 200:
+                        print(f"❌ Status check failed with status: {response.status_code}")
+                        return False
+                    
+                    data = response.json()
+                    status = data.get('status')
+                    progress = data.get('progress', 0)
+                    message = data.get('message', '')
+                    title = data.get('title', '')
+                    
+                    print(f"   Status: {status}, Progress: {progress}%, Title: {title}")
+                    
+                    if status == 'done':
+                        print("✅ Job completed successfully")
+                        print(f"   Final title: {title}")
+                        print(f"   Duration: {data.get('duration_s')} seconds")
+                        print(f"   MP3 file: {data.get('filepath_mp3')}")
+                        
+                        # Check if we have all expected data
+                        if title and data.get('filepath_mp3'):
+                            self.test_results['youtube_download'] = True
+                            self.test_results['mp3_conversion'] = True
+                            return True
+                        else:
+                            print("❌ Missing expected data in completed job")
+                            return False
+                            
+                    elif status == 'error':
+                        print(f"❌ Job failed with error: {message}")
+                        return False
+                    
+                    elif status in ['queued', 'downloading', 'converting']:
+                        # Job is still processing
+                        time.sleep(3)  # Wait 3 seconds before next check
+                        attempt += 1
                     else:
-                        print("❌ Missing expected data in completed job")
+                        print(f"❌ Unknown status: {status}")
                         return False
                         
-                elif status == 'error':
-                    print(f"❌ Job failed with error: {message}")
-                    return False
-                
-                elif status in ['queued', 'downloading', 'converting']:
-                    # Job is still processing
-                    time.sleep(5)  # Wait 5 seconds before next check
+                except requests.exceptions.RequestException as e:
+                    print(f"   Connection issue, retrying... ({str(e)})")
+                    time.sleep(2)
                     attempt += 1
-                else:
-                    print(f"❌ Unknown status: {status}")
-                    return False
+                    continue
             
             print("❌ Job did not complete within timeout period")
             return False

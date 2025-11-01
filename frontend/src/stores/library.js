@@ -22,11 +22,35 @@ export const useLibraryStore = create((set, get) => ({
         dbGet(STORAGE_KEYS.PLAYLISTS)
       ]);
 
+      const sanitizedTracks = Array.isArray(tracks)
+        ? tracks.filter((track) => {
+            if (!track) return false;
+            const playback = track.playback;
+            if (!playback || playback.kind !== 'direct') return true;
+            if (typeof playback.url !== 'string' || playback.url.trim() === '') {
+              return false;
+            }
+            if (playback.url.startsWith('blob:')) {
+              console.warn('Discarding stale local track without persisted data:', track.title || track.id);
+              return false;
+            }
+            return true;
+          })
+        : [];
+
       set({
-        tracks: tracks || [],
+        tracks: sanitizedTracks,
         playlists: playlists || [],
         loaded: true
       });
+
+      if (Array.isArray(tracks) && sanitizedTracks.length !== tracks.length) {
+        try {
+          await dbSet(STORAGE_KEYS.TRACKS, sanitizedTracks);
+        } catch (persistError) {
+          console.warn('Unable to persist sanitized library:', persistError);
+        }
+      }
     } catch (error) {
       console.error('Failed to load library:', error);
       set({ loaded: true }); // Mark as loaded even on error

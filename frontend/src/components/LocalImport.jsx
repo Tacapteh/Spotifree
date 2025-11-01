@@ -48,19 +48,31 @@ const LocalImport = () => {
     return new Promise((resolve) => {
       const audio = new Audio();
       const objectUrl = URL.createObjectURL(file);
-      
+
       audio.addEventListener('loadedmetadata', () => {
         const durationMs = Math.floor(audio.duration * 1000);
         URL.revokeObjectURL(objectUrl);
         resolve(durationMs);
       });
-      
+
       audio.addEventListener('error', () => {
         URL.revokeObjectURL(objectUrl);
         resolve(0); // Default to 0 if we can't get duration
       });
-      
+
       audio.src = objectUrl;
+    });
+  };
+
+  /**
+   * Read a file as a data URL so it can be persisted across reloads
+   */
+  const readFileAsDataUrl = (file) => {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(reader.result);
+      reader.onerror = () => reject(reader.error || new Error('Failed to read file'));
+      reader.readAsDataURL(file);
     });
   };
 
@@ -91,8 +103,8 @@ const LocalImport = () => {
       for (const file of audioFiles) {
         const { artist, title } = parseFilename(file.name);
         const artistId = generateArtistId(artist);
-        const objectUrl = URL.createObjectURL(file);
         const duration = await getAudioDuration(file);
+        const dataUrl = await readFileAsDataUrl(file);
 
         const track = {
           id: nanoid(),
@@ -102,7 +114,14 @@ const LocalImport = () => {
           artistName: artist,
           artistId,
           durationMs: duration,
-          playback: { kind: 'direct', url: objectUrl, mime: file.type }
+          playback: {
+            kind: 'direct',
+            url: dataUrl,
+            mime: file.type,
+            size: file.size,
+            filename: file.name,
+            persisted: true
+          }
         };
 
         tracks.push(track);

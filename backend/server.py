@@ -7,6 +7,7 @@ from fastapi.responses import FileResponse
 from pydantic import BaseModel
 
 from app import audio_pipeline
+from app.budget_api import create_budget_router
 from app.db import create_audio_job, get_audio_job
 
 import os
@@ -34,6 +35,7 @@ app.add_middleware(
 )
 
 api_router = APIRouter(prefix="/api")
+api_router.include_router(create_budget_router())
 
 
 class SubmitRequest(BaseModel):

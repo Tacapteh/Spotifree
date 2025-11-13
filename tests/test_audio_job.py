@@ -1,6 +1,7 @@
 import asyncio
 import importlib
 import sys
+import types
 from fastapi import BackgroundTasks
 
 
@@ -13,6 +14,11 @@ def test_submit_audio_without_mongo_env(tmp_path, monkeypatch):
     # Ensure modules are reloaded with new environment
     sys.modules.pop("app.db", None)
     sys.modules.pop("backend.server", None)
+    monkeypatch.setitem(
+        sys.modules,
+        "imageio_ffmpeg",
+        types.SimpleNamespace(get_ffmpeg_exe=lambda: "ffmpeg"),
+    )
     server = importlib.import_module("backend.server")
     importlib.reload(server)
 
@@ -29,6 +35,11 @@ def test_audio_download_serves_mp3(tmp_path, monkeypatch):
     monkeypatch.chdir(tmp_path)
     sys.modules.pop("app.db", None)
     sys.modules.pop("backend.server", None)
+    monkeypatch.setitem(
+        sys.modules,
+        "imageio_ffmpeg",
+        types.SimpleNamespace(get_ffmpeg_exe=lambda: "ffmpeg"),
+    )
     server = importlib.import_module("backend.server")
     importlib.reload(server)
     from app import db as db_module

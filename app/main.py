@@ -10,6 +10,7 @@ from fastapi.responses import FileResponse, JSONResponse
 from pydantic import BaseModel
 
 from . import audio_pipeline
+from .budget_api import create_budget_router
 from .db import AUDIO_DIR, create_audio_job, get_audio_job
 
 app = FastAPI()
@@ -21,6 +22,8 @@ app.add_middleware(
     allow_headers=["*"],
     expose_headers=["Content-Disposition"],
 )
+
+app.include_router(create_budget_router(), prefix="/api")
 
 DATA_DIR = Path(os.getenv("DATA_DIR", str(AUDIO_DIR))).resolve()
 DATA_DIR.mkdir(parents=True, exist_ok=True)

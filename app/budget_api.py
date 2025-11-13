@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import re
 from typing import Any, Dict, Optional
 
 from fastapi import APIRouter, HTTPException
@@ -45,8 +46,57 @@ class BudgetItemPayload(BaseModel):
             stripped = value.strip()
             if not stripped:
                 return None
+
+            # Normalise the string by removing currency symbols, thin spaces and
+            # other non numeric characters while keeping decimal separators.
+            # Common inputs such as "1 234,56 €" or "1.234,56" should be
+            # accepted.
+            normalised = stripped
+            for whitespace in (" ", "\u00a0", "\u202f"):
+                normalised = normalised.replace(whitespace, "")
+            normalised = re.sub(r"[^0-9,\.\-]", "", normalised)
+
+            if normalised.count("-") > 1 or (
+                "-" in normalised and not normalised.startswith("-")
+            ):
+                raise ValueError("Le montant doit être un nombre.")
+
+            if not normalised or normalised in {"-", ",", "."}:
+                raise ValueError("Le montant doit être un nombre.")
+
+            if normalised.count(",") and normalised.count("."):
+                # Determine the decimal separator based on the last occurrence
+                # and strip the other symbol which we treat as thousands
+                # separator.
+                last_comma = normalised.rfind(",")
+                last_dot = normalised.rfind(".")
+                if last_comma > last_dot:
+                    thousands_sep = "."
+                    normalised = normalised.replace(thousands_sep, "")
+                    decimal_sep = ","
+                else:
+                    thousands_sep = ","
+                    normalised = normalised.replace(thousands_sep, "")
+                    decimal_sep = "."
+            else:
+                if "," in normalised:
+                    decimal_candidate = normalised.split(",")[-1]
+                    if 0 < len(decimal_candidate) <= 2:
+                        decimal_sep = ","
+                        thousands_sep = "."
+                    else:
+                        decimal_sep = "."
+                        thousands_sep = ","
+                else:
+                    decimal_sep = "."
+                    thousands_sep = ","
+                normalised = normalised.replace(thousands_sep, "")
+
+            if decimal_sep == ",":
+                normalised = normalised.replace(",", ".")
+
             try:
-                return float(stripped.replace(",", "."))
+                return float(normalised)
             except ValueError as exc:  # pragma: no cover - defensive
                 raise ValueError("Le montant doit être un nombre.") from exc
         raise ValueError("Le montant doit être un nombre.")

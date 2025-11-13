@@ -45,6 +45,25 @@ def test_create_budget_item_success(budget_endpoints):
     assert any(entry["id"] == item["id"] for entry in items)
 
 
+@pytest.mark.parametrize(
+    "raw_amount",
+    [
+        "1 234,56 €",
+        "1\u202f234,56",
+        "1.234,56",
+        "1,234.56",
+        "-250,00",
+    ],
+)
+def test_create_budget_item_accepts_localised_amounts(budget_endpoints, raw_amount):
+    payload_model = budget_endpoints["payload_model"]
+    payload = payload_model(name="Test", amount=raw_amount)
+    response = budget_endpoints["create"](payload)
+    item = response["item"]
+    expected_amount = -250.0 if "-" in raw_amount else 1234.56
+    assert pytest.approx(item["amount"], rel=1e-6) == expected_amount
+
+
 def test_create_budget_item_requires_name(budget_endpoints):
     payload_model = budget_endpoints["payload_model"]
     payload = payload_model(amount=50)

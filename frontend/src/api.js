@@ -1,4 +1,7 @@
-export const API_BASE = (typeof import.meta !== "undefined" && import.meta.env?.VITE_API_BASE) || "https://TON-BACKEND.onrender.com";
+const envApiBase = typeof import.meta !== "undefined" ? import.meta.env?.VITE_API_BASE : undefined;
+const runtimeBase = typeof window !== "undefined" ? window.location.origin : "";
+
+export const API_BASE = (envApiBase && envApiBase.trim()) || runtimeBase || "";
 
 const API_ROOT = API_BASE.replace(/\/+$/, "");
 

@@ -4,7 +4,7 @@ const DEFAULT_API_BASE = "https://spotifree-backend.onrender.com";
 
 export const API_BASE =
   (envApiBase && envApiBase.trim()) ||
-  (runtimeBase && runtimeBase.includes("localhost") ? runtimeBase : DEFAULT_API_BASE);
+  (runtimeBase && /^https?:\/\//.test(runtimeBase) ? runtimeBase : DEFAULT_API_BASE);
 
 const API_ROOT = API_BASE.replace(/\/+$/, "");
 

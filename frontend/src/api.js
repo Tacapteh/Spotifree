@@ -1,7 +1,10 @@
 const envApiBase = typeof import.meta !== "undefined" ? import.meta.env?.VITE_API_BASE : undefined;
 const runtimeBase = typeof window !== "undefined" ? window.location.origin : "";
+const DEFAULT_API_BASE = "https://spotifree-backend.onrender.com";
 
-export const API_BASE = (envApiBase && envApiBase.trim()) || runtimeBase || "";
+export const API_BASE =
+  (envApiBase && envApiBase.trim()) ||
+  (runtimeBase && runtimeBase.includes("localhost") ? runtimeBase : DEFAULT_API_BASE);
 
 const API_ROOT = API_BASE.replace(/\/+$/, "");
 

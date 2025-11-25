@@ -211,8 +211,12 @@ const VideoDownloader = () => {
       anchor.remove();
       URL.revokeObjectURL(downloadUrl);
     } catch (downloadError) {
+      let message = downloadError?.message || "Échec du téléchargement";
+      if (downloadError?.name === "TypeError") {
+        message = "Téléchargement impossible (connexion réseau ou CORS).";
+      }
       updateJob(jobId, {
-        message: downloadError.message || "Échec du téléchargement",
+        message,
       });
     } finally {
       setDownloadingJobId((current) => (current === jobId ? null : current));

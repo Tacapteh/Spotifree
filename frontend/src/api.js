@@ -33,3 +33,13 @@ export async function getJob(jobId) {
   }
   return response.json();
 }
+
+
+export async function getYtDlpInfo() {
+  const response = await fetch(`${API_ROOT}/api/ytdlp/info`);
+  if (!response.ok) {
+    const error = await response.json().catch(() => ({}));
+    throw Object.assign(new Error("Impossible de récupérer les informations yt-dlp"), { response, error });
+  }
+  return response.json();
+}

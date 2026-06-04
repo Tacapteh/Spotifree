@@ -45,6 +45,15 @@ class SubmitRequest(BaseModel):
 class JobRequest(BaseModel):
     url: str
     bitrate: int | None = None
+    output_format: str | None = "mp3"
+
+
+
+
+@api_router.get("/ytdlp/info")
+@api_router.get("/ytdlp/info/")
+async def ytdlp_info():
+    return audio_pipeline.ytdlp_runtime_info()
 
 
 @api_router.post("/audio/submit")
@@ -79,7 +88,7 @@ async def audio_download(audio_id: str):
     job = get_audio_job(audio_id)
     if not job or not job.get("filepath_mp3"):
         raise HTTPException(status_code=404, detail="File not ready")
-    return FileResponse(job["filepath_mp3"], media_type="audio/mpeg")
+    return FileResponse(job["filepath_mp3"], media_type=audio_pipeline.media_type_for_path(Path(job["filepath_mp3"])))
 
 
 # --- Compatibility endpoints used by the frontend ---
@@ -94,7 +103,13 @@ async def create_job(req: JobRequest, background_tasks: BackgroundTasks):
     if not source_url:
         raise HTTPException(status_code=400, detail="URL is required")
 
-    job_id = create_audio_job(source_url)
+    try:
+        output_format = audio_pipeline.normalize_output_format(req.output_format)
+        bitrate = audio_pipeline.normalize_bitrate(req.bitrate)
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+    job_id = create_audio_job(source_url, output_format=output_format, bitrate=bitrate)
     background_tasks.add_task(audio_pipeline.process_audio_job, job_id)
     return {"job_id": job_id}
 
@@ -116,6 +131,8 @@ async def job_status(job_id: str):
         "title": job.get("title"),
         "duration_s": job.get("duration_s"),
         "created_at": job.get("created_at").isoformat() if job.get("created_at") else None,
+        "output_format": job.get("output_format", "mp3"),
+        "bitrate": job.get("bitrate", 192),
         "download_url": f"/api/download/{job_id}" if download_ready else None,
     }
 
@@ -126,6 +143,9 @@ async def job_status(job_id: str):
 @api_router.head("/download/{job_id}/")
 async def download(job_id: str):
     file_path = (DATA_DIR / f"{job_id}.mp3").resolve()
+    mp4_path = (DATA_DIR / f"{job_id}.mp4").resolve()
+    if not file_path.is_file() and mp4_path.is_file():
+        file_path = mp4_path
 
     if not file_path.is_file():
         job = get_audio_job(job_id)
@@ -141,7 +161,7 @@ async def download(job_id: str):
 
     return FileResponse(
         path=file_path,
-        media_type="audio/mpeg",
+        media_type=audio_pipeline.media_type_for_path(file_path),
         filename=file_path.name,
         headers={"Cache-Control": "no-store"},
     )

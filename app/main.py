@@ -32,6 +32,7 @@ DATA_DIR.mkdir(parents=True, exist_ok=True)
 class JobRequest(BaseModel):
     url: str
     bitrate: Optional[int] = None
+    output_format: Optional[str] = "mp3"
 
 
 @app.get("/health")
@@ -44,13 +45,26 @@ async def health() -> dict[str, bool]:
     return {"ok": True}
 
 
+
+
+@app.get("/api/ytdlp/info")
+async def ytdlp_info() -> Dict[str, Any]:
+    return audio_pipeline.ytdlp_runtime_info()
+
+
 @app.post("/api/jobs")
 async def create_job(payload: JobRequest, background_tasks: BackgroundTasks) -> Dict[str, str]:
     source_url = payload.url.strip()
     if not source_url:
         raise HTTPException(status_code=400, detail="URL is required")
 
-    job_id = create_audio_job(source_url)
+    try:
+        output_format = audio_pipeline.normalize_output_format(payload.output_format)
+        bitrate = audio_pipeline.normalize_bitrate(payload.bitrate)
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+    job_id = create_audio_job(source_url, output_format=output_format, bitrate=bitrate)
     background_tasks.add_task(audio_pipeline.process_audio_job, job_id)
     return {"job_id": job_id}
 
@@ -71,6 +85,8 @@ async def job_status(job_id: str) -> Dict[str, Any]:
         "title": job.get("title"),
         "duration_s": job.get("duration_s"),
         "created_at": job.get("created_at").isoformat() if job.get("created_at") else None,
+        "output_format": job.get("output_format", "mp3"),
+        "bitrate": job.get("bitrate", 192),
         "download_url": f"/api/download/{job_id}" if download_ready else None,
     }
 
@@ -78,6 +94,9 @@ async def job_status(job_id: str) -> Dict[str, Any]:
 @app.get("/api/download/{job_id}")
 async def download(job_id: str):
     file_path = (DATA_DIR / f"{job_id}.mp3").resolve()
+    mp4_path = (DATA_DIR / f"{job_id}.mp4").resolve()
+    if not file_path.is_file() and mp4_path.is_file():
+        file_path = mp4_path
 
     if not file_path.is_file():
         job = get_audio_job(job_id)
@@ -93,7 +112,7 @@ async def download(job_id: str):
 
     return FileResponse(
         path=file_path,
-        media_type="audio/mpeg",
+        media_type=audio_pipeline.media_type_for_path(file_path),
         filename=file_path.name,
         headers={"Cache-Control": "no-store"},
     )

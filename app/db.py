@@ -24,6 +24,8 @@ class Audio:
         self.id: str = data.get("id", str(uuid.uuid4()))
         self.created_at: datetime = data.get("created_at", datetime.utcnow())
         self.source_url: str = data["source_url"]
+        self.output_format: str = data.get("output_format", "mp3")
+        self.bitrate: int = int(data.get("bitrate") or 192)
         self.status: str = data.get("status", "queued")
         self.progress: int = data.get("progress", 0)
         self.message: str = data.get("message", "")
@@ -36,6 +38,8 @@ class Audio:
             "id": self.id,
             "created_at": self.created_at.isoformat(),
             "source_url": self.source_url,
+            "output_format": self.output_format,
+            "bitrate": self.bitrate,
             "status": self.status,
             "progress": self.progress,
             "message": self.message,
@@ -55,6 +59,8 @@ def init_db() -> None:
             id TEXT PRIMARY KEY,
             created_at TEXT,
             source_url TEXT,
+            output_format TEXT DEFAULT 'mp3',
+            bitrate INTEGER DEFAULT 192,
             status TEXT,
             progress INTEGER,
             message TEXT,
@@ -64,24 +70,34 @@ def init_db() -> None:
         )
         """
     )
+    existing_columns = {row[1] for row in _conn.execute("PRAGMA table_info(audio)").fetchall()}
+    migrations = {
+        "output_format": "ALTER TABLE audio ADD COLUMN output_format TEXT DEFAULT 'mp3'",
+        "bitrate": "ALTER TABLE audio ADD COLUMN bitrate INTEGER DEFAULT 192",
+    }
+    for column, statement in migrations.items():
+        if column not in existing_columns:
+            _conn.execute(statement)
     _conn.commit()
 
 # INSERT END: init_db
 
 # INSERT START: CRUD
 
-def create_audio_job(source_url: str) -> str:
-    audio = Audio(source_url=source_url)
+def create_audio_job(source_url: str, output_format: str = "mp3", bitrate: int = 192) -> str:
+    audio = Audio(source_url=source_url, output_format=output_format, bitrate=bitrate)
     _conn.execute(
         """
         INSERT INTO audio (
-            id, created_at, source_url, status, progress, message, title, duration_s, filepath_mp3
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+            id, created_at, source_url, output_format, bitrate, status, progress, message, title, duration_s, filepath_mp3
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         """,
         (
             audio.id,
             audio.created_at.isoformat(),
             audio.source_url,
+            audio.output_format,
+            audio.bitrate,
             audio.status,
             audio.progress,
             audio.message,

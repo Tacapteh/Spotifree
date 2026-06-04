@@ -20,13 +20,26 @@ const initialForm = {
   bitrate: 192,
 };
 
-const extractApiMessage = (error, fallback) =>
-  error?.error?.detail?.error?.message ||
-  error?.error?.detail ||
-  error?.error?.error?.message ||
-  error?.error?.message ||
-  error?.message ||
-  fallback;
+const formatApiDetail = (detail) => {
+  if (!detail) return "";
+  if (typeof detail === "string") return detail;
+  if (typeof detail === "object") {
+    return detail?.error?.message || detail?.message || JSON.stringify(detail);
+  }
+  return String(detail);
+};
+
+const extractApiMessage = (error, fallback) => {
+  const detail =
+    error?.error?.detail?.error?.message ||
+    error?.error?.detail?.message ||
+    error?.error?.detail ||
+    error?.error?.error?.message ||
+    error?.error?.message ||
+    error?.message;
+  const message = formatApiDetail(detail);
+  return message || fallback;
+};
 
 const VideoDownloader = () => {
   const [form, setForm] = useState(initialForm);

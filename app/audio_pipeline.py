@@ -9,7 +9,6 @@ from __future__ import annotations
 
 import math
 import mimetypes
-import os
 import random
 import subprocess
 import tempfile
@@ -18,11 +17,18 @@ from pathlib import Path
 from typing import Any, Dict
 
 import yt_dlp
+from yt_dlp.utils import DownloadError
 
 from .db import AUDIO_DIR, get_audio_job, update_audio_job
 
 SUPPORTED_OUTPUT_FORMATS = {"mp3", "mp4"}
 SUPPORTED_BITRATES = {128, 192, 256, 320}
+YOUTUBE_PLAYER_CLIENTS = ("web", "android", "tv_embedded")
+YOUTUBE_BOT_BLOCK_MESSAGE = (
+    "YouTube demande une vérification anti-robot pour cette vidéo. "
+    "Le blocage vient de YouTube, pas de Spotifree ni du site. "
+    "Réessayez plus tard ou testez une autre vidéo."
+)
 
 
 def normalize_output_format(value: Any) -> str:
@@ -119,39 +125,35 @@ def process_audio_job(audio_id: str) -> None:
             filepath_mp3=str(output_file),
         )
     except Exception as exc:  # pragma: no cover - safety net
-        update_audio_job(audio_id, status="error", message=str(exc))
+        update_audio_job(audio_id, status="error", message=_friendly_ytdlp_error(exc))
 
 
 def _base_ytdlp_options(ffmpeg_exe: str, progress_hook) -> Dict[str, Any]:
     headers = {
         "User-Agent": (
             "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
-            "AppleWebKit/537.36 (KHTML, like Gecko) Chrome/123.0.0.0 Safari/537.36"
+            "AppleWebKit/537.36 (KHTML, like Gecko) "
+            "Chrome/149.0.0.0 Safari/537.36"
         ),
         "Referer": "https://www.youtube.com/",
         "Accept-Language": "fr-FR,fr;q=0.9,en-US;q=0.8,en;q=0.7",
     }
-    options: Dict[str, Any] = {
+    return {
         "noplaylist": True,
         "quiet": True,
         "no_warnings": True,
-        "retries": 20,
-        "fragment_retries": 20,
+        "retries": 5,
+        "fragment_retries": 5,
+        "sleep_interval_requests": 1,
         "concurrent_fragment_downloads": 1,
         "socket_timeout": 30,
         "prefer_free_formats": True,
         "geo_bypass": True,
         "http_headers": headers,
-        "extractor_args": {"youtube": {"player_client": ["android", "web"]}},
+        "extractor_args": {"youtube": {"player_client": list(YOUTUBE_PLAYER_CLIENTS)}},
         "ffmpeg_location": ffmpeg_exe,
         "progress_hooks": [progress_hook],
     }
-
-    cookiefile = os.getenv("COOKIES_TXT")
-    if cookiefile and Path(cookiefile).is_file():
-        options["cookiefile"] = cookiefile
-
-    return options
 
 
 def _download_mp3(
@@ -168,8 +170,7 @@ def _download_mp3(
         "outtmpl": str(tmp_path / "source.%(ext)s"),
     }
 
-    with yt_dlp.YoutubeDL(ydl_opts) as ydl:
-        info = ydl.extract_info(source_url, download=True)
+    info = _extract_info_with_youtube_fallback(source_url, ydl_opts, audio_id)
 
     update_audio_job(
         audio_id,
@@ -229,13 +230,69 @@ def _download_mp4(
         "paths": {"home": str(tmp_path)},
     }
 
-    with yt_dlp.YoutubeDL(ydl_opts) as ydl:
-        info = ydl.extract_info(source_url, download=True)
-        downloaded = Path(ydl.prepare_filename(info)).with_suffix(".mp4")
+    info = _extract_info_with_youtube_fallback(source_url, ydl_opts, audio_id)
 
-    candidates = [downloaded, *tmp_path.glob("source*.mp4")]
+    candidates = [*tmp_path.glob("source*.mp4")]
     source_file = next((candidate for candidate in candidates if candidate.is_file()), None)
     if not source_file:
         raise RuntimeError("Téléchargement échoué : aucun fichier MP4 généré.")
     source_file.replace(output_file)
     return output_file, info
+
+
+def _extract_info_with_youtube_fallback(source_url: str, ydl_opts: Dict[str, Any], audio_id: str) -> Dict[str, Any]:
+    attempts = (
+        ("configuration normale", None),
+        ("client YouTube Android", ["android"]),
+        ("client YouTube TV embedded", ["tv_embedded"]),
+    )
+    last_error: Exception | None = None
+
+    for index, (label, player_clients) in enumerate(attempts, start=1):
+        attempt_opts = _with_youtube_player_clients(ydl_opts, player_clients)
+        if index > 1:
+            update_audio_job(
+                audio_id,
+                status="downloading",
+                message=f"Nouvelle tentative yt-dlp ({label})…",
+            )
+        try:
+            with yt_dlp.YoutubeDL(attempt_opts) as ydl:
+                return ydl.extract_info(source_url, download=True)
+        except DownloadError as exc:
+            last_error = exc
+        except Exception as exc:
+            last_error = exc
+            if not _is_youtube_bot_block(exc):
+                raise
+
+    if last_error and _is_youtube_bot_block(last_error):
+        raise RuntimeError(YOUTUBE_BOT_BLOCK_MESSAGE) from last_error
+    if last_error:
+        raise last_error
+    raise RuntimeError("Téléchargement impossible avec yt-dlp.")
+
+
+def _with_youtube_player_clients(ydl_opts: Dict[str, Any], player_clients: list[str] | None) -> Dict[str, Any]:
+    if player_clients is None:
+        return dict(ydl_opts)
+
+    extractor_args = {
+        key: dict(value) if isinstance(value, dict) else value
+        for key, value in (ydl_opts.get("extractor_args") or {}).items()
+    }
+    youtube_args = dict(extractor_args.get("youtube") or {})
+    youtube_args["player_client"] = player_clients
+    extractor_args["youtube"] = youtube_args
+    return {**ydl_opts, "extractor_args": extractor_args}
+
+
+def _friendly_ytdlp_error(exc: Exception) -> str:
+    if _is_youtube_bot_block(exc):
+        return YOUTUBE_BOT_BLOCK_MESSAGE
+    return str(exc)
+
+
+def _is_youtube_bot_block(exc: Exception) -> bool:
+    message = str(exc).lower()
+    return "sign in to confirm" in message and "not a bot" in message
